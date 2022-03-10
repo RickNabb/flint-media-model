@@ -43,8 +43,11 @@ citizens-own [
 
 medias-own [
   media-attrs
-  messages-sent
+;  messages-sent
   idee
+  brain
+  messages-heard
+  messages-believed
 ]
 
 breed [ medias media ]
@@ -79,11 +82,6 @@ to setup
     connect-media
   ] [
     read-graph
-  ]
-
-  ;; Load message data sets to be used by the influencer agents
-  if media-agents? [
-    set messages-over-time load-messages-over-time (word messages-data-path "/") (word message-file ".json")
   ]
 
   ;; Layout turtles
@@ -154,36 +152,23 @@ end
 
 to create-media
   if media-agents? [
-      ; Disbelief
-;      create-medias 1 [
-;        set media-attrs [ ["A" 0] ]
-;        set cur-message-id 0
-;        set messages-sent []
-;        setxy -4 0
-;        set color red
-;        set idee "DIS"
-;      ]
+    ; Define something that describes the media ecosystem
+    ; Draw from that distribution while creating media agents -- power dist = np.random.power(a, size=n)
+    ; Make a mechanism that distinguishes between "types" of media agents (local vs natl) based on their edges drawn from the dist
+    ; Make a mechanism that makes diff types of agents connect to diff portions of the graph
+    ; - Locals connect to different small clusters
+    ; - Natl connects across the entire graph
+    ; Initialize them w/ a brain but no belief about A
 
-    ;  ; Uncertainty
-    ;  create-medias 1 [
-    ;    set media-attrs [ ["A" 3] ]
-    ;    set cur-message-id 0
-    ;    set messages-sent []
-    ;    setxy -3 0
-    ;    set color violet
-    ;    set idee "UNC"
-    ;  ]
-
-    ; Belief
-    create-medias 1 [
-      set media-attrs []
-      set media-attrs lput (list "A" (belief-resolution - 1)) media-attrs
-      set cur-message-id 0
-      set messages-sent []
-      setxy -4 1
-      set color blue
-      set idee "BEL"
-    ]
+;    create-medias 1 [
+;      set media-attrs []
+;      set media-attrs lput (list "A" (belief-resolution - 1)) media-attrs
+;      set cur-message-id 0
+;      set messages-sent []
+;      setxy -4 1
+;      set color blue
+;      set idee "BEL"
+;    ]
   ]
 end
 
@@ -424,7 +409,7 @@ end
 to send-media-message-to-subscribers [ m message ]
   ask m [
     let mid cur-message-id
-    set messages-sent (lput (list mid message) messages-sent)
+;    set messages-sent (lput (list mid message) messages-sent)
     ask my-subscribers [
       ask other-end [
         receive-message self m message mid
@@ -734,7 +719,7 @@ to-report load-messages-over-time [ path filename ]
     error "Messaging directory does not exist for current resolution"
   ]
   report py:runresult(
-    word "read_message_over_time_data('" path "/" belief-resolution "/" filename "')"
+    word "read_message_over_time_data(r'" path "/" belief-resolution "/" filename "')"
   )
 end
 
@@ -1615,7 +1600,7 @@ simple-spread-chance
 simple-spread-chance
 0
 1
-0.95
+0.15
 0.01
 1
 NIL
@@ -1630,7 +1615,7 @@ complex-spread-ratio
 complex-spread-ratio
 0
 1
-0.95
+0.35
 0.01
 1
 NIL
@@ -1973,7 +1958,7 @@ SWITCH
 771
 contagion-on?
 contagion-on?
-1
+0
 1
 -1000
 
