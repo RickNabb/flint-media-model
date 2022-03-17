@@ -1299,10 +1299,10 @@ NIL
 0
 
 SLIDER
-536
-742
-666
-775
+537
+584
+667
+617
 threshold
 threshold
 0
@@ -1483,13 +1483,13 @@ Aggregate Charts
 
 CHOOSER
 330
-793
+635
 472
-838
+680
 spread-type
 spread-type
 "simple" "complex" "cognitive"
-1
+0
 
 TEXTBOX
 302
@@ -1552,20 +1552,20 @@ NIL
 1
 
 CHOOSER
-18
-792
-171
-837
+19
+634
+172
+679
 cognitive-fn
 cognitive-fn
 "linear-gullible" "linear-stubborn" "linear-mid" "threshold-gullible" "threshold-mid" "threshold-stubborn" "sigmoid-gullible" "sigmoid-stubborn" "sigmoid-mid"
 7
 
 SLIDER
-164
-739
-338
-772
+165
+580
+339
+613
 simple-spread-chance
 simple-spread-chance
 0
@@ -1577,10 +1577,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-349
-739
-523
-772
+350
+580
+524
+613
 complex-spread-ratio
 complex-spread-ratio
 0
@@ -1592,10 +1592,10 @@ NIL
 HORIZONTAL
 
 CHOOSER
-183
-793
-322
-838
+184
+635
+323
+680
 brain-type
 brain-type
 "discrete" "continuous"
@@ -1626,42 +1626,6 @@ D:/school/grad-school/Tufts/research/cognitive-contagion/simulation-data/
 1
 0
 String
-
-INPUTBOX
-23
-580
-471
-655
-messages-data-path
-C:\\Users\\nrabb_000\\Documents\\school\\grad-school\\Tufts\\research\\projects\\flint-media-model\\messaging-data
-1
-0
-String
-
-TEXTBOX
-23
-559
-238
-585
-Message Parameters
-11
-0.0
-1
-
-SLIDER
-23
-659
-196
-692
-message-repeats
-message-repeats
-0
-10
-1.0
-1
-1
-NIL
-HORIZONTAL
 
 PLOT
 732
@@ -1702,16 +1666,6 @@ count citizens with [dict-value brain \"A\" = 6]
 1
 11
 
-CHOOSER
-478
-585
-617
-630
-message-file
-message-file
-"default" "50-50" "gradual"
-2
-
 SWITCH
 27
 275
@@ -1719,15 +1673,15 @@ SWITCH
 308
 media-agents?
 media-agents?
-0
+1
 1
 -1000
 
 SLIDER
 20
-882
+724
 193
-915
+757
 cognitive-exponent
 cognitive-exponent
 -10
@@ -1740,9 +1694,9 @@ HORIZONTAL
 
 SLIDER
 20
-842
+684
 193
-875
+717
 cognitive-scalar
 cognitive-scalar
 -20
@@ -1755,9 +1709,9 @@ HORIZONTAL
 
 SWITCH
 200
-842
+684
 345
-875
+717
 cognitive-scalar?
 cognitive-scalar?
 1
@@ -1765,10 +1719,10 @@ cognitive-scalar?
 -1000
 
 SWITCH
-202
-884
-367
-917
+203
+725
+368
+758
 cognitive-exponent?
 cognitive-exponent?
 0
@@ -1776,10 +1730,10 @@ cognitive-exponent?
 -1000
 
 SLIDER
-19
-927
-192
-960
+20
+769
+193
+802
 cognitive-translate
 cognitive-translate
 -10
@@ -1791,10 +1745,10 @@ NIL
 HORIZONTAL
 
 SWITCH
-202
-927
-365
-960
+203
+769
+366
+802
 cognitive-translate?
 cognitive-translate?
 0
@@ -1802,10 +1756,10 @@ cognitive-translate?
 -1000
 
 TEXTBOX
-22
-715
-210
-738
+23
+556
+211
+579
 Contagion Parameters
 11
 0.0
@@ -1922,13 +1876,13 @@ mag-style
 1
 
 SWITCH
-23
-738
-156
-771
+24
+580
+157
+613
 contagion-on?
 contagion-on?
-0
+1
 1
 -1000
 
