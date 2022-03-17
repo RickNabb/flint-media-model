@@ -361,21 +361,6 @@ to go
 end
 
 to step
-  if media-agents? [
-    ;; Have media companies create messages
-    let messages (dict-value messages-over-time (word ticks))
-    foreach messages [ media-messages ->
-      let media-idee item 0 media-messages
-      foreach (item 1 media-messages) [ m ->
-        ask medias with [ idee = media-idee] [
-          let a (dict-value m "A")
-          repeat message-repeats [
-            send-media-message-to-subscribers self (list (list "A" a))
-          ]
-        ]
-      ]
-    ]
-  ]
   if contagion-on? [
     ;; In the case where we do not have influencer agents, simply do a contagion from the agent perspective
     ask citizens [
@@ -402,22 +387,24 @@ to update-citizen
   if show-citizen-political? [ give-self-ip-color ]
 end
 
+;; TODO: Remove this maybe?? If we don't need it
+;;
 ;; Initiate the sending of a message from influencer agent m to its subscribers.
 ;;
 ;; @param m - The influencer agent to send the message.
 ;; @param message - The message to send.
-to send-media-message-to-subscribers [ m message ]
-  ask m [
-    let mid cur-message-id
-;    set messages-sent (lput (list mid message) messages-sent)
-    ask my-subscribers [
-      ask other-end [
-        receive-message self m message mid
-      ]
-    ]
-    set cur-message-id (cur-message-id + 1)
-  ]
-end
+;to send-media-message-to-subscribers [ m message ]
+;  ask m [
+;    let mid cur-message-id
+;;    set messages-sent (lput (list mid message) messages-sent)
+;    ask my-subscribers [
+;      ask other-end [
+;        receive-message self m message mid
+;      ]
+;    ]
+;    set cur-message-id (cur-message-id + 1)
+;  ]
+;end
 
 ;; Have a citizen agent receive a message: hear it, either believe it or not, and subsequently either
 ;; share it or not.
@@ -714,15 +701,6 @@ end
 ;; NOTE: For procedures that simply report back what comes from a python function, please refer
 ;; to the python function itself for function details.
 
-to-report load-messages-over-time [ path filename ]
-  if not file-exists? (word path "/" belief-resolution) [
-    error "Messaging directory does not exist for current resolution"
-  ]
-  report py:runresult(
-    word "read_message_over_time_data(r'" path "/" belief-resolution "/" filename "')"
-  )
-end
-
 to-report sample-attr-dist [ attr ]
   report py:runresult(
     word "random_dist_sample(" attr "," belief-resolution ")"
@@ -807,14 +785,6 @@ to-report weighted-dist-to-agent-brain [ agent-brain message ]
   report py:runresult(
     word "weighted_dist_to_agent_brain(" (agent-brain-as-py-dict agent-brain) "," (list-as-py-dict message true false) "," cognitive-scalar ")"
   )
-end
-
-to-report baseline-infected-size
-  report py:runresult("baseline_infected_size")
-end
-
-to-report infectiousness-duration
-  report py:runresult("infectiousness_duration")
 end
 
 ;; Create an Erdos-Renyi graph with the NetworkX package in python
@@ -1663,7 +1633,7 @@ INPUTBOX
 471
 655
 messages-data-path
-D:/school/grad-school/Tufts/research/cognitive-contagion/messaging-data
+C:\\Users\\nrabb_000\\Documents\\school\\grad-school\\Tufts\\research\\projects\\flint-media-model\\messaging-data
 1
 0
 String
