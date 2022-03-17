@@ -52,7 +52,7 @@ breed [ medias media ]
 breed [ citizens citizen ]
 
 undirected-link-breed [ social-friends social-friend ]
-directed-link-breed [ subscribers subscriber ]
+undirected-link-breed [ subscribers subscriber ]
 
 ;;;;;;;;;;;;;;;;;
 ;; SETUP PROCS
@@ -248,7 +248,7 @@ to connect-media
     ask n-of 5 citizens [
 ;      let t self
 ;      if dist-to-agent-brain brain ([media-attrs] of m) <= epsilon [
-      create-subscriber-from m
+      create-subscriber-with m
 ;      ]
     ]
   ]
