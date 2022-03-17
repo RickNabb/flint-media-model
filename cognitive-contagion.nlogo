@@ -42,8 +42,6 @@ citizens-own [
 ]
 
 medias-own [
-  media-attrs
-;  messages-sent
   idee
   brain
   messages-heard
@@ -160,15 +158,32 @@ to create-media
     ; - Natl connects across the entire graph
     ; Initialize them w/ a brain but no belief about A
 
-;    create-medias 1 [
-;      set media-attrs []
-;      set media-attrs lput (list "A" (belief-resolution - 1)) media-attrs
-;      set cur-message-id 0
-;      set messages-sent []
-;      setxy -4 1
-;      set color blue
-;      set idee "BEL"
-;    ]
+    create-medias 1 [
+      let b create-agent-brain 1 [] [] [] []
+      set brain b
+      set cur-message-id 0
+      setxy -4 1
+      set color green
+      set idee "ONE"
+    ]
+
+    create-medias 2 [
+      let b create-agent-brain 2 [] [] [] []
+      set brain b
+      set cur-message-id 0
+      setxy -2 1
+      set color green
+      set idee "TWO"
+    ]
+
+    create-medias 3 [
+      let b create-agent-brain 3 [] [] [] []
+      set brain b
+      set cur-message-id 0
+      setxy 0 1
+      set color green
+      set idee "THR"
+    ]
   ]
 end
 
@@ -229,11 +244,12 @@ to connect-media
   let u 0
   ask medias [
     let m self
-    ask citizens [
-      let t self
-      if dist-to-agent-brain brain ([media-attrs] of m) <= epsilon [
-        create-subscriber-from m
-      ]
+    ;; TODO: This is a placeholder -- it should be changed
+    ask n-of 5 citizens [
+;      let t self
+;      if dist-to-agent-brain brain ([media-attrs] of m) <= epsilon [
+      create-subscriber-from m
+;      ]
     ]
   ]
 end
@@ -571,7 +587,7 @@ to save-graph
   ;; TODO: Find some way to get the prior & malleable attributes into a list rather than hardcoding
   let cit-ip ([(list self (dict-value brain "A") (dict-value brain "ID"))] of citizens)
   let cit-social [[self] of both-ends] of social-friends
-  let media-ip ([(list self (dict-value media-attrs "A"))] of medias)
+  let media-ip ([(list self (dict-value brain "A"))] of medias)
   let media-sub [[self] of both-ends] of subscribers
   py:run (word "save_graph('" save-graph-path "','" cit-ip "','" cit-social "','" media-ip "','" media-sub "')")
 end
@@ -1673,7 +1689,7 @@ SWITCH
 308
 media-agents?
 media-agents?
-1
+0
 1
 -1000
 
