@@ -39,6 +39,7 @@ citizens-own [
   brain
   messages-heard
   messages-believed
+  is-flint?
 ]
 
 medias-own [
@@ -132,11 +133,20 @@ to create-citizen-dist [ id ]
 end
 
 to create-citizen [ id prior-vals malleable-vals ]
-  let b create-agent-brain id citizen-priors citizen-malleables prior-vals malleable-vals
+  let b create-agent-brain id [] [] [] []
   create-citizens 1 [
     set brain b
     set messages-heard []
     set messages-believed []
+    set is-flint? false
+
+    ; TODO: Get rid of this once we have different network structure
+    let rand random-float 1
+    if rand <= 0.1 [
+      set is-flint? true
+      set brain create-agent-brain id citizen-priors citizen-malleables prior-vals malleable-vals
+    ]
+
 ;    set size 0.5
     set size 1
     setxy random-xcor random-ycor
@@ -662,12 +672,17 @@ end
 
 to give-self-ip-color
   let a (dict-value brain "A")
+  ifelse a = -1 [
+    set color (extract-rgb gray)
+  ] [
+    let bel-color []
+    set bel-color lput (255 - (round ((255 / (belief-resolution - 1)) * a))) bel-color
+    set bel-color lput 0 bel-color
+    set bel-color lput (round ((255 / (belief-resolution - 1)) * a)) bel-color
+    set color bel-color
+  ]
 ;  show (round (255 / belief-resolution) * a)
-  let bel-color []
-  set bel-color lput (255 - (round ((255 / (belief-resolution - 1)) * a))) bel-color
-  set bel-color lput 0 bel-color
-  set bel-color lput (round ((255 / (belief-resolution - 1)) * a)) bel-color
-  set color bel-color
+
 
   ;; Attribute A color
 ;  if a = 0 [ set color (extract-rgb 12) ] ; dark red
@@ -1459,7 +1474,7 @@ SWITCH
 132
 show-social-friends?
 show-social-friends?
-1
+0
 1
 -1000
 
