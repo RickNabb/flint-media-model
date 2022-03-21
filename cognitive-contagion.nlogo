@@ -51,8 +51,13 @@ medias-own [
 breed [ medias media ]
 breed [ citizens citizen ]
 
+<<<<<<< Updated upstream
 undirected-link-breed [ social-friends social-friend ]
 undirected-link-breed [ subscribers subscriber ]
+=======
+directed-link-breed [ social-friends social-friend ]
+directed-link-breed [ subscribers subscriber ]
+>>>>>>> Stashed changes
 
 ;;;;;;;;;;;;;;;;;
 ;; SETUP PROCS
