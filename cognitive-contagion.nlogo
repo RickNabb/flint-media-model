@@ -51,13 +51,8 @@ medias-own [
 breed [ medias media ]
 breed [ citizens citizen ]
 
-<<<<<<< Updated upstream
-undirected-link-breed [ social-friends social-friend ]
-undirected-link-breed [ subscribers subscriber ]
-=======
 directed-link-breed [ social-friends social-friend ]
 directed-link-breed [ subscribers subscriber ]
->>>>>>> Stashed changes
 
 ;;;;;;;;;;;;;;;;;
 ;; SETUP PROCS
@@ -241,7 +236,7 @@ to connect-agents
     let cit1 citizen end-1
     let cit2 citizen end-2
 ;    show (word "Linking " cit1 "(" (dict-value [brain] of cit1 "A") ") and " cit2 "(" (dict-value [brain] of cit2 "A") ")")
-    ask citizen end-1 [ create-social-friend-with citizen end-2 ]
+    ask citizen end-1 [ create-social-friend-to citizen end-2 ]
   ]
 end
 
@@ -253,7 +248,8 @@ to connect-media
     ask n-of 5 citizens [
 ;      let t self
 ;      if dist-to-agent-brain brain ([media-attrs] of m) <= epsilon [
-      create-subscriber-with m
+      create-subscriber-from m
+      create-subscriber-to m
 ;      ]
     ]
   ]
@@ -618,7 +614,7 @@ to read-graph
   foreach citizens-conns [ c ->
     let c1 read-from-string (item 0 c)
     let c2 read-from-string (item 1 c)
-    ask citizen c1 [ create-social-friend-with citizen c2 ]
+    ask citizen c1 [ create-social-friend-to citizen c2 ]
   ]
 
   ;; Fudging media connections too since epsilon may not want to change between runs
@@ -859,7 +855,7 @@ to connect_mag
       let rand random-float 1
       if (el > rand) and (u != v) [
         ;show(word "Linking turtle b/c el:" el " and rand " rand)
-        ask turtle u [ create-social-friend-with turtle v ]
+        ask turtle u [ create-social-friend-to turtle v ]
       ]
       set v v + 1
     ]
