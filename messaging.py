@@ -94,7 +94,6 @@ Create an agent brain model. Paramters are described below.
   message is received an its distance to the agent's brain is within beta, the
   agent will start to lean toward updating its belief by incrementing a token
   counter for the given direction of differing attributes.
-:param threshold: How many tokens an agent must stack up before they switch
   belief.
 :param alpha: The value for the agent's willingness to share a message - if a
   message is received and its distance to the agent's brain is within alpha, the
@@ -108,7 +107,6 @@ def create_agent_brain(
     malleable_initial,
     brain_type,
     beta=1.0,
-    threshold=5,
     alpha=1.0
     ):
     agent = {
@@ -117,9 +115,7 @@ def create_agent_brain(
         'beta': beta,
         'malleable': list(map(lambda attr: attr.name, malleable_attributes)),
         'prior': list(map(lambda attr: attr.name, prior_attributes)),
-        'tokens': {},
         'cont_tokens': {},
-        'update_threshold': threshold
     }
     # Initialize malleable beliefs w/ tokens for belief updates
     for i in range(0, len(malleable_attributes)):
@@ -136,39 +132,12 @@ def create_agent_brain(
         attr = malleable_attributes[i]
         agent[attr.name] = malleable_initial[i]
         # Initialize belief change counters
-        agent["tokens"][attr.name] = {}
-        for val in attrs_as_array(attr):
-          agent["tokens"][attr.name][val] = 0
     elif brain_type == 'continuous':
       for i in range(0, len(malleable_attributes)):
         attr = malleable_attributes[i]
         agent['cont_tokens'][attr.name] = malleable_initial[i]
 
     return agent
-
-"""
-Update an agent's belief tokens. This is the modeling of an agent starting
-to change their beliefs. If the token count reaches a certain threshold,
-the agent will change their appropriate belief to match the value that breached
-the threshold.
-
-:param agent: The agent to update belief tokens on.
-:param attrs: Attributes to update tokens for.
-"""
-def update_agent_tokens(agent, attrs):
-    for attr in attrs:
-        token = agent['tokens'][attr][attrs[attr]]
-
-        # If the update threshold is reached, update the agent belief
-        if token+1 >= agent['update_threshold']:
-            agent[attr] = attrs[attr]
-            #print('Updating agent belief on ' + str(attr.name) + ' to ' + str(attrs[attr]))
-
-            # Clear tokens
-            for tokens in agent['tokens'][attr]:
-                agent['tokens'][attr][tokens] = 0
-        else:
-            agent['tokens'][attr][attrs[attr]] += 1
 
 """
 Have an agent compare its beliefs to those in the message. The distance between
@@ -184,12 +153,12 @@ will update its beliefs.
 of spread to simulate.
 """
 def receive_message(agent, message, spread_type):
-    agent_beliefs = agent_beliefs_from_message(agent, message)
     dist = dist_to_agent_brain(agent, message)
 
     # Update agent belief tokens if the message is within updating threshold
     if dist <= agent['beta']:
       believe_message(agent, message, spread_type)
+
     return agent
 
 """
@@ -203,19 +172,14 @@ of spread to simulate.
 """
 def believe_message(agent, message, spread_type, brain_type):
   if brain_type == 'discrete':
-    # agent_beliefs = agent_beliefs_from_message(agent, message)
-    # # Update agent belief tokens if the message is within updating threshold
-    # if spread_type == "cognitive":
-    #   #print('updating belief tokens')
-    #   update_attrs = {}
-    #   for attr in message:
-    #       if message[attr] != agent_beliefs[attr] and attr in agent['tokens']:
-    #           update_attrs[attr] = message[attr]
-    #   update_agent_tokens(agent, update_attrs)
-    # # Just have the agent believe whatever it is
-    # elif spread_type == "simple" or spread_type == "complex":
+    agent_beliefs = agent_beliefs_from_message(agent, message)
+    agent_empty_beliefs = list(filter(lambda key: agent_beliefs[key] == -1, agent_beliefs))
     for m in message:
-      if m in agent['malleable']: agent[m] = message[m]
+      # We made a decision so that even if an agent doesn't believe
+      # the rest of the message, they adopt beliefs that they 
+      # didn't have
+      if m in agent['malleable'] or m in agent_empty_beliefs: agent[m] = message[m]
+
   elif brain_type == 'continuous':
     for attr in filter(lambda el: el in agent['malleable'], message):
       cont_attr = agent['cont_tokens'][attr]
@@ -258,8 +222,9 @@ parameters.
 """
 def dist_to_agent_brain(agent, message):
   agent_beliefs = agent_beliefs_from_message(agent, message)
+  agent_nonempty_beliefs = list(filter(lambda el: el != -1, agent_beliefs))
   m_arr = message_as_array(message)
-  a_arr = message_as_array(agent_beliefs)
+  a_arr = message_as_array(agent_nonempty_beliefs)
   return message_distance(m_arr, a_arr)
 
 """
@@ -280,7 +245,10 @@ def weighted_dist_to_agent_brain(agent, message, weight):
 def agent_beliefs_from_message(agent, message):
   agent_beliefs = {}
   for attr in message:
-    agent_beliefs[attr] = agent[attr]
+    if attr in agent:
+      agent_beliefs[attr] = agent[attr]
+    else:
+      agent_beliefs[attr] = -1
   return agent_beliefs
 
 def agent_belief_vec_from_message(agent, message):
