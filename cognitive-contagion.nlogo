@@ -42,8 +42,6 @@ citizens-own [
 ]
 
 medias-own [
-  media-attrs
-;  messages-sent
   idee
   brain
   messages-heard
@@ -53,8 +51,11 @@ medias-own [
 breed [ medias media ]
 breed [ citizens citizen ]
 
-undirected-link-breed [ social-friends social-friend ]
+directed-link-breed [ social-friends social-friend ]
 directed-link-breed [ subscribers subscriber ]
+
+social-friends-own [ weight ]
+subscribers-own [ weight ]
 
 ;;;;;;;;;;;;;;;;;
 ;; SETUP PROCS
@@ -160,15 +161,32 @@ to create-media
     ; - Natl connects across the entire graph
     ; Initialize them w/ a brain but no belief about A
 
-;    create-medias 1 [
-;      set media-attrs []
-;      set media-attrs lput (list "A" (belief-resolution - 1)) media-attrs
-;      set cur-message-id 0
-;      set messages-sent []
-;      setxy -4 1
-;      set color blue
-;      set idee "BEL"
-;    ]
+    create-medias 1 [
+      let b create-agent-brain 1 [] [] [] []
+      set brain b
+      set cur-message-id 0
+      setxy -4 1
+      set color green
+      set idee "ONE"
+    ]
+
+    create-medias 2 [
+      let b create-agent-brain 2 [] [] [] []
+      set brain b
+      set cur-message-id 0
+      setxy -2 1
+      set color green
+      set idee "TWO"
+    ]
+
+    create-medias 3 [
+      let b create-agent-brain 3 [] [] [] []
+      set brain b
+      set cur-message-id 0
+      setxy 0 1
+      set color green
+      set idee "THR"
+    ]
   ]
 end
 
@@ -221,7 +239,7 @@ to connect-agents
     let cit1 citizen end-1
     let cit2 citizen end-2
 ;    show (word "Linking " cit1 "(" (dict-value [brain] of cit1 "A") ") and " cit2 "(" (dict-value [brain] of cit2 "A") ")")
-    ask citizen end-1 [ create-social-friend-with citizen end-2 ]
+    ask citizen end-1 [ create-social-friend-to citizen end-2 [ set weight citizen-citizen-influence ] ]
   ]
 end
 
@@ -229,11 +247,13 @@ to connect-media
   let u 0
   ask medias [
     let m self
-    ask citizens [
-      let t self
-      if dist-to-agent-brain brain ([media-attrs] of m) <= epsilon [
-        create-subscriber-from m
-      ]
+    ;; TODO: This is a placeholder -- it should be changed
+    ask n-of 5 citizens [
+;      let t self
+;      if dist-to-agent-brain brain ([media-attrs] of m) <= epsilon [
+      create-subscriber-from m [ set weight media-citizen-influence ]
+      create-subscriber-to m [ set weight citizen-media-influence ]
+;      ]
     ]
   ]
 end
@@ -571,7 +591,7 @@ to save-graph
   ;; TODO: Find some way to get the prior & malleable attributes into a list rather than hardcoding
   let cit-ip ([(list self (dict-value brain "A") (dict-value brain "ID"))] of citizens)
   let cit-social [[self] of both-ends] of social-friends
-  let media-ip ([(list self (dict-value media-attrs "A"))] of medias)
+  let media-ip ([(list self (dict-value brain "A"))] of medias)
   let media-sub [[self] of both-ends] of subscribers
   py:run (word "save_graph('" save-graph-path "','" cit-ip "','" cit-social "','" media-ip "','" media-sub "')")
 end
@@ -597,7 +617,7 @@ to read-graph
   foreach citizens-conns [ c ->
     let c1 read-from-string (item 0 c)
     let c2 read-from-string (item 1 c)
-    ask citizen c1 [ create-social-friend-with citizen c2 ]
+    ask citizen c1 [ create-social-friend-to citizen c2 [ set weight citizen-citizen-influence ] ]
   ]
 
   ;; Fudging media connections too since epsilon may not want to change between runs
@@ -838,7 +858,7 @@ to connect_mag
       let rand random-float 1
       if (el > rand) and (u != v) [
         ;show(word "Linking turtle b/c el:" el " and rand " rand)
-        ask turtle u [ create-social-friend-with turtle v ]
+        ask turtle u [ create-social-friend-to turtle v [ set weight citizen-citizen-influence ] ]
       ]
       set v v + 1
     ]
@@ -1673,7 +1693,7 @@ SWITCH
 308
 media-agents?
 media-agents?
-1
+0
 1
 -1000
 
@@ -1882,7 +1902,7 @@ SWITCH
 613
 contagion-on?
 contagion-on?
-1
+0
 1
 -1000
 
@@ -1900,6 +1920,61 @@ belief-resolution
 1
 NIL
 HORIZONTAL
+
+SLIDER
+359
+323
+537
+356
+citizen-citizen-influence
+citizen-citizen-influence
+0
+1
+1.0
+0.01
+1
+NIL
+HORIZONTAL
+
+SLIDER
+359
+279
+534
+312
+citizen-media-influence
+citizen-media-influence
+0
+1
+0.1
+0.01
+1
+NIL
+HORIZONTAL
+
+SLIDER
+541
+279
+716
+312
+media-citizen-influence
+media-citizen-influence
+0
+1
+1.0
+0.01
+1
+NIL
+HORIZONTAL
+
+TEXTBOX
+362
+259
+512
+277
+Link weight settings
+11
+0.0
+1
 
 @#$#@#$#@
 ## WHAT IS IT?

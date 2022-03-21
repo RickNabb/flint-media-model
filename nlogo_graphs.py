@@ -40,7 +40,7 @@ Return a Netlogo-safe Barabasi-Albert graph from the NetworkX package.
 '''
 def BA_graph(n, m):
   G = nx.barabasi_albert_graph(n, m)
-  return nlogo_safe_nodes_edges(G)
+  return nlogo_safe_nodes_edges(bidirected_graph(G))
 
 '''
 Create a MAG graph for N nodes, given L attributes, and a style of connection
@@ -69,6 +69,19 @@ def MAG_graph(n, attrs, style, resolution):
   nlogo_G = nlogo_safe_nodes_edges(G)
   nlogo_G.update({'L': L})
   return nlogo_G
+
+def bidirected_graph(G):
+  '''
+  Convert an undirected graph to a directed graph where each
+  undirected edge becomes two directed edges.
+
+  :param G: An undirected networkx graph.
+  '''
+  bidirected_G = nx.DiGraph()
+  for edge in G.edges:
+    bidirected_G.add_edge(edge[0], edge[1])
+    bidirected_G.add_edge(edge[1], edge[0])
+  return bidirected_G
 
 '''
 Return NetLogo-safe graph structures.
