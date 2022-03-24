@@ -9,7 +9,8 @@ import itertools
 import pandas as pd
 import os
 import numpy as np
-from scipy.stats import chi2_contingency
+from scipy.stats import chi2_contingency, truncnorm
+import math
 
 """
 BELIEF ATTRIBUTES
@@ -96,24 +97,7 @@ itself to return the needed dependency.
 its approriate distribution in the empirical data.
 """
 def random_dist_sample(attr, resolution, given=None):
-    emp_vals = AttributeValues[attr.name]['vals'](resolution)
-    emp_dist = create_discrete_dist_sm(emp_vals)
-    # vals = []
-    # dist = []
-    vals = emp_vals
-    dist = emp_dist
-    # if emp_dist['depends_on'] is not None and given is None:
-    #     depends_sample = random_dist_sample(emp_dist['depends_on'], resolution)
-    #     vals = emp_vals[depends_sample]
-    #     dist = emp_dist[depends_sample]
-    # elif emp_dist['depends_on'] is not None and emp_dist['depends_on'] in given:
-    #     depends_sample = given[emp_dist['depends_on']]
-    #     vals = emp_vals[depends_sample]
-    #     dist = emp_dist[depends_sample]
-    # else:
-    #     vals = emp_vals
-    #     dist = emp_dist
-    return range(resolution)[sample_dist(vals, dist)]
+    return AttributeValues[attr.name]['vals'](resolution)
 
 """
 Sample an attribute with an equal distribution over the values.
@@ -148,11 +132,19 @@ AMAGHomophilicTheta = lambda resolution: np.matrix([ HomophilicThetaRow(i, resol
 AMAGHeterophilicTheta = lambda resolution: np.matrix([ HeterophilicThetaRow(i, resolution, 2, 5, 1) for i in range(0, resolution) ])
 
 def uniform_dist(resolution):
-  return np.ones(resolution)
+  return math.floor(np.random.uniform(low=0, high = resolution))
+
+def normal_dist(resolution):
+  lower=-0.5
+  upper=resolution+0.5
+  mean=math.floor(resolution/2)
+  sigma=mean/3
+  dist = truncnorm((lower - mean) / sigma, (upper - mean) / sigma, loc=mean, scale=sigma)
+  return round(dist.rvs(1)[0])
 
 AttributeValues = {
   Attributes.A.name: {
-    "vals": uniform_dist,
+    "vals": normal_dist,
     "depends_on": None
   }
 }
