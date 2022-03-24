@@ -171,31 +171,35 @@ to create-media
     ; - Natl connects across the entire graph
     ; Initialize them w/ a brain but no belief about A
 
-    create-medias 1 [
-      let b create-agent-brain 1 [] [] [] []
-      set brain b
-      set cur-message-id 0
-      setxy -4 1
-      set color green
-      set idee "ONE"
-    ]
-
-    create-medias 2 [
-      let b create-agent-brain 2 [] [] [] []
-      set brain b
-      set cur-message-id 0
-      setxy -2 1
-      set color green
-      set idee "TWO"
-    ]
+;    create-medias 1 [
+;      let b create-agent-brain 1 [] [] [] []
+;      set brain b
+;      set cur-message-id 0
+;      setxy -4 1
+;      set color green
+;      set idee "ONE"
+;    ]
+;
+;    create-medias 2 [
+;      let b create-agent-brain 2 [] [] [] []
+;      set brain b
+;      set cur-message-id 0
+;      setxy -2 1
+;      set color green
+;      set idee "TWO"
+;    ]
 
     create-medias 3 [
       let b create-agent-brain 3 [] [] [] []
       set brain b
       set cur-message-id 0
-      setxy 0 1
+      ;setxy 0 1
+      setxy random-xcor random-ycor
       set color green
       set idee "THR"
+      ;Cat's bug exp
+      set messages-heard []
+      set messages-believed []
     ]
   ]
 end
@@ -396,7 +400,7 @@ to step
     ask citizens with [ not is-agent-brain-empty? self ] [
       let c self
       ask out-link-neighbors [
-        show (word "Citizen " self " receiving message " (agent-brain-malleable-values c) " from citizen " c)
+       ; show (word "Citizen " self " receiving message " (agent-brain-malleable-values c) " from citizen " c)
         receive-message self c (agent-brain-malleable-values c) 0
       ]
     ]
@@ -489,8 +493,8 @@ to receive-message [ cit sender message message-id ]
       if spread-type = "simple" [
         let roll random-float 1
         if roll <= simple-spread-chance [
-          show(word "believing " message-id)
-          show (believe-message-py brain message)
+          ;show(word "believing " message-id)
+          ;show (believe-message-py brain message)
           set brain (believe-message-py brain message)
           believe-message self message-id message
           ask social-friend-neighbors [
@@ -1131,9 +1135,9 @@ to-report tuple-list-as-py-dict [ l key-quotes? val-quotes? ]
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-1162
+1169
 13
-1791
+1798
 643
 -1
 -1
@@ -1307,7 +1311,7 @@ threshold
 threshold
 0
 20
-5.0
+20.0
 1
 1
 NIL
@@ -1439,7 +1443,7 @@ SWITCH
 132
 show-social-friends?
 show-social-friends?
-0
+1
 1
 -1000
 
@@ -1489,7 +1493,7 @@ CHOOSER
 spread-type
 spread-type
 "simple" "complex" "cognitive"
-0
+1
 
 TEXTBOX
 302
@@ -1570,7 +1574,7 @@ simple-spread-chance
 simple-spread-chance
 0
 1
-0.15
+0.59
 0.01
 1
 NIL
@@ -1773,7 +1777,7 @@ CHOOSER
 graph-type
 graph-type
 "erdos-renyi" "watts-strogatz" "barabasi-albert" "mag" "facebook"
-2
+0
 
 SLIDER
 437
@@ -1873,7 +1877,7 @@ CHOOSER
 mag-style
 mag-style
 "default" "homophilic" "heterophilic"
-1
+0
 
 SWITCH
 24
@@ -2298,7 +2302,7 @@ false
 Polygon -7500403 true true 270 75 225 30 30 225 75 270
 Polygon -7500403 true true 30 75 75 30 270 225 225 270
 @#$#@#$#@
-NetLogo 6.1.1
+NetLogo 6.2.2
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@

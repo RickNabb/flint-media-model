@@ -222,7 +222,7 @@ parameters.
 """
 def dist_to_agent_brain(agent, message):
   agent_beliefs = agent_beliefs_from_message(agent, message)
-  agent_nonempty_beliefs = list(filter(lambda el: el != -1, agent_beliefs))
+  agent_nonempty_beliefs = {key: val for (key, val) in agent_beliefs.items() if val != -1}
   m_arr = message_as_array(message)
   a_arr = message_as_array(agent_nonempty_beliefs)
   return message_distance(m_arr, a_arr)
