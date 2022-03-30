@@ -39,6 +39,7 @@ citizens-own [
   brain
   messages-heard
   messages-believed
+  is-flint?
 ]
 
 medias-own [
@@ -132,11 +133,20 @@ to create-citizen-dist [ id ]
 end
 
 to create-citizen [ id prior-vals malleable-vals ]
-  let b create-agent-brain id citizen-priors citizen-malleables prior-vals malleable-vals
+  let b create-agent-brain id [] [] [] []
   create-citizens 1 [
     set brain b
     set messages-heard []
     set messages-believed []
+    set is-flint? false
+
+    ; TODO: Get rid of this once we have different network structure
+    let rand random-float 1
+    if rand <= 0.1 [
+      set is-flint? true
+      set brain create-agent-brain id citizen-priors citizen-malleables prior-vals malleable-vals
+    ]
+
 ;    set size 0.5
     set size 1
     setxy random-xcor random-ycor
@@ -161,31 +171,35 @@ to create-media
     ; - Natl connects across the entire graph
     ; Initialize them w/ a brain but no belief about A
 
-    create-medias 1 [
-      let b create-agent-brain 1 [] [] [] []
-      set brain b
-      set cur-message-id 0
-      setxy -4 1
-      set color green
-      set idee "ONE"
-    ]
-
-    create-medias 2 [
-      let b create-agent-brain 2 [] [] [] []
-      set brain b
-      set cur-message-id 0
-      setxy -2 1
-      set color green
-      set idee "TWO"
-    ]
+;    create-medias 1 [
+;      let b create-agent-brain 1 [] [] [] []
+;      set brain b
+;      set cur-message-id 0
+;      setxy -4 1
+;      set color green
+;      set idee "ONE"
+;    ]
+;
+;    create-medias 2 [
+;      let b create-agent-brain 2 [] [] [] []
+;      set brain b
+;      set cur-message-id 0
+;      setxy -2 1
+;      set color green
+;      set idee "TWO"
+;    ]
 
     create-medias 3 [
       let b create-agent-brain 3 [] [] [] []
       set brain b
       set cur-message-id 0
-      setxy 0 1
+      ;setxy 0 1
+      setxy random-xcor random-ycor
       set color green
       set idee "THR"
+      ;Cat's bug exp
+      set messages-heard []
+      set messages-believed []
     ]
   ]
 end
@@ -383,9 +397,10 @@ end
 to step
   if contagion-on? [
     ;; In the case where we do not have influencer agents, simply do a contagion from the agent perspective
-    ask citizens [
+    ask citizens with [ not is-agent-brain-empty? self ] [
       let c self
-      ask social-friend-neighbors [
+      ask out-link-neighbors [
+       ; show (word "Citizen " self " receiving message " (agent-brain-malleable-values c) " from citizen " c)
         receive-message self c (agent-brain-malleable-values c) 0
       ]
     ]
@@ -478,7 +493,8 @@ to receive-message [ cit sender message message-id ]
       if spread-type = "simple" [
         let roll random-float 1
         if roll <= simple-spread-chance [
-;          show(word "believing " message-id)
+          ;show(word "believing " message-id)
+          ;show (believe-message-py brain message)
           set brain (believe-message-py brain message)
           believe-message self message-id message
           ask social-friend-neighbors [
@@ -662,12 +678,17 @@ end
 
 to give-self-ip-color
   let a (dict-value brain "A")
+  ifelse a = -1 [
+    set color (extract-rgb gray)
+  ] [
+    let bel-color []
+    set bel-color lput (255 - (round ((255 / (belief-resolution - 1)) * a))) bel-color
+    set bel-color lput 0 bel-color
+    set bel-color lput (round ((255 / (belief-resolution - 1)) * a)) bel-color
+    set color bel-color
+  ]
 ;  show (round (255 / belief-resolution) * a)
-  let bel-color []
-  set bel-color lput (255 - (round ((255 / (belief-resolution - 1)) * a))) bel-color
-  set bel-color lput 0 bel-color
-  set bel-color lput (round ((255 / (belief-resolution - 1)) * a)) bel-color
-  set color bel-color
+
 
   ;; Attribute A color
 ;  if a = 0 [ set color (extract-rgb 12) ] ; dark red
@@ -737,7 +758,7 @@ end
 
 to-report create-agent-brain [ id prior-attrs malleable-attrs prior-vals malleable-vals ]
   report py:runresult(
-    word "create_agent_brain(" id "," (list-as-py-array prior-attrs false) "," (list-as-py-array malleable-attrs false) "," (list-as-py-array prior-vals false) ", " (list-as-py-array malleable-vals false) ",'" brain-type "',1, " threshold ",1)"
+    word "create_agent_brain(" id "," (list-as-py-array prior-attrs false) "," (list-as-py-array malleable-attrs false) "," (list-as-py-array prior-vals false) ", " (list-as-py-array malleable-vals false) ",'" brain-type "',1,1)"
   )
 end
 
@@ -768,6 +789,7 @@ end
 to-report believe-message-py [ agent-brain message ]
 ;  show(agent-brain-as-py-dict agent-brain)
   ;show(list-as-py-dict message false false)
+;  show message
 ;  show (word "believe_message(" (agent-brain-as-py-dict agent-brain) ", " (list-as-py-dict message true false) ", '" spread-type "','" brain-type "')")
   report py:runresult(
     word "believe_message(" (agent-brain-as-py-dict agent-brain) ", " (list-as-py-dict message true false) ", '" spread-type "','" brain-type "')"
@@ -901,6 +923,10 @@ end
 ; HELPER PROCS
 ;;;;;;;;;;;;;;;
 
+to-report is-agent-brain-empty? [ agent ]
+  report empty? agent-brain-malleable-values agent
+end
+
 to-report array_shape [g]
   report py:runresult(
     word "kron.np.array(" g ").shape[0]"
@@ -918,57 +944,15 @@ to-report name-of-attribute-val [ attr val ]
   )
 end
 
-;[["ID" 49] ["beta" 1.5] ["tokens" [["I" [["0" 0] ["1" 0] ["2" 0] ["3" 0] ["4" 0]]] ["P" [["0" 0] ["1" 0] ["2" 0]]]]] ["update_threshold" 5] ["I" 2] ["P" 0]]
 to-report agent-brain-as-py-dict [ b ]
-  if brain-type = "discrete" [
-    ;; Do the tokens thing
-    let tokens item 1 (dict-entry b "tokens")
-    let subtokens [ ]
-    foreach tokens [ token ->
-      set subtokens (lput (multi-list-as-tuple-list token false false) subtokens)
-    ]
-    let token-ml (list "tokens" (list-as-py-dict subtokens true false))
-
-    ;; Replace the tokens entry in the original list
-    set b (replace-dict-item b "tokens" token-ml)
-  ]
-
   ;; Convert to a py-dict
   report list-as-py-dict-rec b true false
-end
-
-to-report agent-brain-token-list [ agent attr ]
-  let b [brain] of agent
-  let tokens (dict-value b "tokens")
-  let token-list []
-  foreach tokens [ token ->
-    if (item 0 token) = attr [
-      set token-list map [ el -> item 1 el ] (item 1 token)
-;      foreach (item 1 token) [ bucket ->
-;        set token-list (lput (item 1 bucket) token-list)
-;      ]
-    ]
-  ]
-  report token-list
 end
 
 to-report agent-brain-malleable-values [ agent ]
   let b [brain] of agent
   let malleables (dict-value b "malleable")
   report filter [ bel -> member? (item 0 bel) malleables ] [brain] of agent
-end
-
-to-report histogrammable-brain-token-list [ agent attr ]
-  let l agent-brain-token-list agent attr
-  let i 0
-  let hist []
-  foreach l [ t ->
-    repeat t [
-      set hist (lput i hist)
-    ]
-    set i i + 1
-  ]
-  report hist
 end
 
 ;; Limits a value between a min and a max.
@@ -1151,9 +1135,9 @@ to-report tuple-list-as-py-dict [ l key-quotes? val-quotes? ]
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-1162
+1169
 13
-1791
+1798
 643
 -1
 -1
@@ -1327,7 +1311,7 @@ threshold
 threshold
 0
 20
-5.0
+20.0
 1
 1
 NIL
@@ -1509,7 +1493,7 @@ CHOOSER
 spread-type
 spread-type
 "simple" "complex" "cognitive"
-0
+1
 
 TEXTBOX
 302
@@ -1590,7 +1574,7 @@ simple-spread-chance
 simple-spread-chance
 0
 1
-0.15
+0.59
 0.01
 1
 NIL
@@ -1793,7 +1777,7 @@ CHOOSER
 graph-type
 graph-type
 "erdos-renyi" "watts-strogatz" "barabasi-albert" "mag" "facebook"
-2
+0
 
 SLIDER
 437
@@ -1893,7 +1877,7 @@ CHOOSER
 mag-style
 mag-style
 "default" "homophilic" "heterophilic"
-1
+0
 
 SWITCH
 24
@@ -2318,7 +2302,7 @@ false
 Polygon -7500403 true true 270 75 225 30 30 225 75 270
 Polygon -7500403 true true 30 75 75 30 270 225 225 270
 @#$#@#$#@
-NetLogo 6.1.1
+NetLogo 6.2.2
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@
