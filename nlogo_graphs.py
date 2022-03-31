@@ -10,6 +10,17 @@ import numpy as np
 import mag
 from messaging import *
 from random import random
+from kronecker import kronecker_pow
+
+'''
+Return a NetLogo-safe Erdos-Renyi graph from the NetworkX package.
+
+:param n: The number of nodes for the graph.
+:param p: The probability of two random nodes connecting.
+'''
+def ER_graph_bidirected(n, p):
+  G = nx.erdos_renyi_graph(n, p)
+  return nlogo_safe_nodes_edges(bidirected_graph(G))
 
 '''
 Return a NetLogo-safe Erdos-Renyi graph from the NetworkX package.
@@ -28,6 +39,17 @@ Return a Netlogo-safe Watts-Strogatz graph from the NetworkX package.
 :param k: The number of initial neighbors.
 :param p: The probability of an edge rewiring.
 '''
+def WS_graph_bidirected(n, k, p):
+  G = nx.watts_strogatz_graph(n, k, p)
+  return nlogo_safe_nodes_edges(bidirected_graph(G))
+
+'''
+Return a Netlogo-safe Watts-Strogatz graph from the NetworkX package.
+
+:param n: The number of nodes.
+:param k: The number of initial neighbors.
+:param p: The probability of an edge rewiring.
+'''
 def WS_graph(n, k, p):
   G = nx.watts_strogatz_graph(n, k, p)
   return nlogo_safe_nodes_edges(G)
@@ -38,9 +60,47 @@ Return a Netlogo-safe Barabasi-Albert graph from the NetworkX package.
 :param n: The number of nodes.
 :param m: The number of edges to connect with when a node is added.
 '''
-def BA_graph(n, m):
+def BA_graph_bidirected(n, m):
   G = nx.barabasi_albert_graph(n, m)
   return nlogo_safe_nodes_edges(bidirected_graph(G))
+
+'''
+Return a Netlogo-safe Barabasi-Albert graph from the NetworkX package.
+
+:param n: The number of nodes.
+:param m: The number of edges to connect with when a node is added.
+'''
+def BA_graph(n, m):
+  G = nx.barabasi_albert_graph(n, m)
+  return nlogo_safe_nodes_edges(G)
+
+'''
+Create a MAG graph for N nodes, given L attributes, and a style of connection
+if there is no specified connection affinity matrix.
+
+:param n: The number of nodes.
+:param attrs: A list of attributes to gather Theta affinity matrices for in order
+to properly calculate the product of all attribute affinities for the matrix.
+:param style: A string denoting how to connect the attributes - default, homophilic, or heterophilic.
+'''
+def MAG_graph_bidirected(n, attrs, style, resolution):
+  (p_edge, L) = mag.attr_mag(n, attrs, style, resolution)
+  # print(p_edge)
+  # print(L)
+  G = nx.Graph()
+  G.add_nodes_from(range(0, len(p_edge[0])))
+  for i in range(0,len(p_edge)):
+    for j in range(0,len(p_edge)):
+      rand = random()
+      if (rand <= p_edge[(i,j)]):
+        # if (abs(L[i][0]-L[j][0]) >= 2):
+          # print(f'Chance to connect {L[i]} and {L[j]}: {p_edge[(i,j)]}')
+          # print(f'Rolled {rand}: {rand <= p_edge[(i,j)]}')
+        G.add_edge(i, j)
+  # print(f'Num edges: {len(G.edges)}')
+  nlogo_G = nlogo_safe_nodes_edges(bidirected_graph(G))
+  nlogo_G.update({'L': L})
+  return nlogo_G
 
 '''
 Create a MAG graph for N nodes, given L attributes, and a style of connection
@@ -69,6 +129,42 @@ def MAG_graph(n, attrs, style, resolution):
   nlogo_G = nlogo_safe_nodes_edges(G)
   nlogo_G.update({'L': L})
   return nlogo_G
+
+def kronecker_graph(seed, k):
+  '''
+  Make a kronecker graph from a given seed to a power.
+
+  :param seed: An np array to Kronecker power.
+  :param k: An integer to raise the graph to the Kronecker power of.
+  '''
+  G_array = kronecker_pow(seed, k)
+  G = nx.Graph()
+  G.add_nodes_from(range(0, G_array.shape[0]))
+  for i in range(G_array.shape[0]):
+    row = G_array[i]
+    for j in range(G_array.shape[1]):
+      p = row[j]
+      if random() < p:
+        G.add_edge(i,j)
+  return nlogo_safe_nodes_edges(G)
+
+def kronecker_graph_bidirected(seed, k):
+  '''
+  Make a kronecker graph from a given seed to a power.
+
+  :param seed: An np array to Kronecker power.
+  :param k: An integer to raise the graph to the Kronecker power of.
+  '''
+  G_array = kronecker_pow(seed, k)
+  G = nx.Graph()
+  G.add_nodes_from(range(0, G_array.shape[0]))
+  for i in range(G_array.shape[0]):
+    row = G_array[i]
+    for j in range(G_array.shape[1]):
+      p = row[j]
+      if random() < p:
+        G.add_edge(i,j)
+  return nlogo_safe_nodes_edges(bidirected_graph(G))
 
 def bidirected_graph(G):
   '''
