@@ -99,7 +99,7 @@ to setup
     layout-circle sort citizens 12
     repeat 2 [ layout-spring citizens social-friends 0.3 10 1 ]
   ]
-  if graph-type = "barabasi-albert" [
+  if graph-type = "barabasi-albert" or graph-type = "kronecker" [
     layout-radial citizens social-friends max_turtle
     layout-spring citizens social-friends 0.3 10 1
   ]
@@ -155,7 +155,13 @@ end
 
 to create-citizenz
   let id 0
-  repeat N [
+  let en 0
+  ifelse graph-type != "kronecker" [
+    set en N
+  ] [
+    set en array_shape kronecker-seed ^ kronecker-k
+  ]
+  repeat en [
     create-citizen-dist id
     set id id + 1
   ]
@@ -874,7 +880,7 @@ end
 
 to-report kronecker [ seed k ]
   report py:runresult(
-    (word "kronecker_pow(np.array(" seed ")," k ")")
+    (word "kronecker_graph_bidirected(np.array(" seed ")," k ")")
   )
 end
 
@@ -1452,7 +1458,7 @@ SWITCH
 132
 show-social-friends?
 show-social-friends?
-1
+0
 1
 -1000
 
@@ -1975,7 +1981,7 @@ INPUTBOX
 402
 615
 kronecker-seed
-[[0.1,0.2],\n[0.2,0.1]]
+[[0.9,0.8],\n[0.8,0.9]]
 1
 1
 String
@@ -1989,7 +1995,7 @@ kronecker-k
 kronecker-k
 0
 10
-5.0
+3.0
 1
 1
 NIL

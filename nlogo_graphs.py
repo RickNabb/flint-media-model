@@ -161,6 +161,8 @@ def kronecker_graph_bidirected(seed, k):
   for i in range(G_array.shape[0]):
     row = G_array[i]
     for j in range(G_array.shape[1]):
+      if i == j:
+        continue
       p = row[j]
       if random() < p:
         G.add_edge(i,j)
