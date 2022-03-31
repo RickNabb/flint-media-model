@@ -8,9 +8,12 @@ Author: Nick Rabb (nick.rabb2@gmail.com)
 import networkx as nx
 import numpy as np
 import mag
+import community
 from messaging import *
 from random import random
 from kronecker import kronecker_pow
+import matplotlib.cm as cm
+import matplotlib.pyplot as plt
 
 '''
 Return a NetLogo-safe Erdos-Renyi graph from the NetworkX package.
@@ -143,6 +146,8 @@ def kronecker_graph(seed, k):
   for i in range(G_array.shape[0]):
     row = G_array[i]
     for j in range(G_array.shape[1]):
+      if i == j:
+        continue
       p = row[j]
       if random() < p:
         G.add_edge(i,j)
@@ -250,3 +255,15 @@ def influencer_paths_within_distance(citizens, friend_links, subscribers, target
       threshold_paths[subscriber] = dist_path
       # threshold_paths[subscriber] = paths[subscriber]
   return threshold_paths
+
+def plot_graph_communities(G, level):
+  '''
+
+  '''
+  dendrogram = community.generate_dendrogram(G)
+  partition = community.partition_at_level(dendrogram, level)
+  pos = nx.spring_layout(G)
+  cmap = cm.get_cmap('viridis', max(partition.values()) + 1)
+  nx.draw_networkx_nodes(G, pos, partition.keys(), node_size=40, cmap=cmap, node_color=list(partition.values()))
+  nx.draw_networkx_edges(G, pos, alpha=0.5)
+  plt.show()
