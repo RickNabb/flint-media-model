@@ -146,7 +146,8 @@ def kronecker_graph(seed, k):
       p = row[j]
       if random() < p:
         G.add_edge(i,j)
-  return nlogo_safe_nodes_edges(G)
+  return G
+  # return nlogo_safe_nodes_edges(G)
 
 def kronecker_graph_bidirected(seed, k):
   '''

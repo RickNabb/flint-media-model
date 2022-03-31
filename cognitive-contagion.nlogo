@@ -1354,7 +1354,7 @@ SWITCH
 91
 show-media-connections?
 show-media-connections?
-0
+1
 1
 -1000
 
@@ -1976,30 +1976,40 @@ Link weight settings
 1
 
 INPUTBOX
-259
-530
-402
-615
+257
+489
+400
+574
 kronecker-seed
-[[0.9,0.8],\n[0.8,0.9]]
+[[0.6,0.16,0.24],\n  [0.40,0.2,0.4],\n  [0.21,0.14,0.65]]
 1
 1
 String
 
 SLIDER
-436
-544
-608
-577
+256
+580
+428
+613
 kronecker-k
 kronecker-k
 0
 10
-3.0
+7.0
 1
 1
 NIL
 HORIZONTAL
+
+TEXTBOX
+261
+467
+411
+485
+Kronecker
+11
+0.0
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
