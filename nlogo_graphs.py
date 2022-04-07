@@ -8,7 +8,7 @@ Author: Nick Rabb (nick.rabb2@gmail.com)
 import networkx as nx
 import numpy as np
 import mag
-import community
+from networkx import community
 from messaging import *
 from random import random
 from kronecker import kronecker_pow
@@ -151,8 +151,10 @@ def kronecker_graph(seed, k):
       p = row[j]
       if random() < p:
         G.add_edge(i,j)
-  return G
-  # return nlogo_safe_nodes_edges(G)
+  largest_connected_component = max(nx.connected_components(G), key=len)
+  G.remove_nodes_from(G.nodes - largest_connected_component)
+  # return G
+  return nlogo_safe_nodes_edges(G)
 
 def kronecker_graph_bidirected(seed, k):
   '''
@@ -172,6 +174,8 @@ def kronecker_graph_bidirected(seed, k):
       p = row[j]
       if random() < p:
         G.add_edge(i,j)
+  largest_connected_component = max(nx.connected_components(G), key=len)
+  G.remove_nodes_from(G.nodes - largest_connected_component)
   return nlogo_safe_nodes_edges(bidirected_graph(G))
 
 def bidirected_graph(G):

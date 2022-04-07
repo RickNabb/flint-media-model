@@ -255,6 +255,7 @@ to connect-agents
     set G kronecker kronecker-seed kronecker-k
   ]
 
+  ; Create links
   let edges (dict-value G "edges")
   foreach edges [ ed ->
     let end-1 (item 0 ed)
@@ -264,6 +265,9 @@ to connect-agents
 ;    show (word "Linking " cit1 "(" (dict-value [brain] of cit1 "A") ") and " cit2 "(" (dict-value [brain] of cit2 "A") ")")
     ask citizen end-1 [ create-social-friend-to citizen end-2 [ set weight citizen-citizen-influence ] ]
   ]
+
+  ; Remove isolates
+  ask citizens with [ empty? sort social-friend-neighbors ] [ die ]
 end
 
 to connect-media
@@ -1995,7 +1999,7 @@ kronecker-k
 kronecker-k
 0
 10
-7.0
+5.0
 1
 1
 NIL
