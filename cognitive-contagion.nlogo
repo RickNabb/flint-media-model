@@ -118,7 +118,6 @@ to setup-py
   py:run "import kronecker as kron"
   py:run "from data import *"
   py:run "from messaging import *"
-  py:run "from louvain import *"
   py:run "import mag as MAG"
   py:run "from nlogo_graphs import *"
 end

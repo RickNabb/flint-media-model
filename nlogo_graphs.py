@@ -8,12 +8,14 @@ Author: Nick Rabb (nick.rabb2@gmail.com)
 import networkx as nx
 import numpy as np
 import mag
-from networkx import community
+import community as community_louvain
 from messaging import *
 from random import random
 from kronecker import kronecker_pow
+from utils import find_nearest, get_keys
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
+from collections import Counter
 
 '''
 Return a NetLogo-safe Erdos-Renyi graph from the NetworkX package.
@@ -271,3 +273,46 @@ def plot_graph_communities(G, level):
   nx.draw_networkx_nodes(G, pos, partition.keys(), node_size=40, cmap=cmap, node_color=list(partition.values()))
   nx.draw_networkx_edges(G, pos, alpha=0.5)
   plt.show()
+
+def flint_community_nlogo(citizens, social_friends, n):
+    '''
+    First convert the citizen and edge arrays into a graph, then
+    call the flint community function.
+
+    :param citizens: An array of citizen nodes in the graph.
+    :param social_friends: An array of citizen social friend edges in the graph.
+    :param n: The ideal size of community to look for.
+    '''
+    G = nlogo_graph_to_nx(citizens, social_friends)
+    return flint_community(G, n)
+
+"""
+Returns an array of the nodes in the community of a graph with 
+number of nodes closest to n
+
+:param G: graph to detect communities
+:param n: approximate number of nodes in community    
+"""
+
+def flint_community(G, n):   
+    # partition = community_louvain.best_partition(G)
+    dendo = community_louvain.generate_dendrogram(G)
+    list_mean = []
+    for level in range(len(dendo) - 1):
+        partition = community_louvain.partition_at_level(dendo, level)
+        arr = np.array(list(partition.values()))
+        mean = np.mean(arr)
+        list_mean.append(mean)
+    closest_mean = find_nearest(list_mean, n)
+    lvl = list_mean.index(closest_mean)
+    partition = community_louvain.partition_at_level(dendo, lvl)
+    # value is number of nodes in community [key]
+    count = Counter(partition.values())
+    # array of numbers of nodes in each community
+    values = list(count.values())
+    # the number of nodes in the community that has the closest size to n
+    comm_size = find_nearest(values, n)
+    # community that corresponds to closest number of nodes
+    closest_community = list(count.keys())[list(count.values()).index(comm_size)]    
+    nodes_in_partition = get_keys(partition, closest_community)
+    return nodes_in_partition
