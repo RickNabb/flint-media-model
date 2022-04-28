@@ -8,3 +8,4 @@ scikit-learn
 setuptools
 sklearn
 websockets
+python-louvain
