@@ -35,8 +35,19 @@ number of nodes closest to n
 :param G: graph to detect communities
 :param n: approximate number of nodes in community    
 """
+
 def flint_community(G, n):   
-    partition = community_louvain.best_partition(G)
+    # partition = community_louvain.best_partition(G)
+    dendo = community_louvain.generate_dendrogram(G)
+    list_mean = []
+    for level in range(len(dendo) - 1):
+        partition = community_louvain.partition_at_level(dendo, level)
+        arr = np.array(list(partition.values()))
+        mean = np.mean(arr)
+        list_mean.append(mean)
+    closest_mean = find_nearest(list_mean, n)
+    lvl = list_mean.index(closest_mean)
+    partition = community_louvain.partition_at_level(dendo, lvl)
     # value is number of nodes in community [key]
     count = Counter(partition.values())
     # array of numbers of nodes in each community
