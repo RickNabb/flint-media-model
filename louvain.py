@@ -51,24 +51,25 @@ number of nodes closest to n
 """
 
 def flint_community(G, n):   
+  def flint_community(G, n):  
     # partition = community_louvain.best_partition(G)
-    # dendo = community_louvain.generate_dendrogram(G)
-    # list_mean = []
-    # for level in range(len(dendo) - 1):
-    #     partition = community_louvain.partition_at_level(dendo, level)
-    #     arr = np.array(list(partition.values()))
-    #     mean = np.mean(arr)
-    #     list_mean.append(mean)
-    # closest_mean = find_nearest(list_mean, n)
-    # lvl = list_mean.index(closest_mean)
-    # partition = community_louvain.partition_at_level(dendo, lvl)
-    # nx.algorithms.community.louvain_communities(G)
-    partition = nx.algorithms.community.louvain_communities(G)
+    dendo = community_louvain.generate_dendrogram(G)
+    list_mean = []
+    for level in range(len(dendo) - 1):
+        partition = community_louvain.partition_at_level(dendo, level)
+        arr = np.array(list(partition.values()))
+        mean = np.mean(arr)
+        list_mean.append(mean)
+    closest_mean = find_nearest(list_mean, n)
+    lvl = list_mean.index(closest_mean)
+    partition = community_louvain.partition_at_level(dendo, lvl)
     # value is number of nodes in community [key]
-    partition_sizes = list(map(lambda part: len(part), partition))
+    count = Counter(partition.values())
+    # array of numbers of nodes in each community
+    values = list(count.values())
     # the number of nodes in the community that has the closest size to n
-    comm_size = find_nearest(partition_sizes, n)
+    comm_size = find_nearest(values, n)
     # community that corresponds to closest number of nodes
-    closest_community = partition[partition_sizes.index(comm_size)]    
-    # nodes_in_partition = get_keys(partition, closest_community)
-    return list(closest_community)
+    closest_community = list(count.keys())[list(count.values()).index(comm_size)]    
+    nodes_in_partition = get_keys(partition, closest_community)
+    return nodes_in_partition
