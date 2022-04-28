@@ -81,6 +81,7 @@ to setup
   ifelse not load-graph? [
     create-agents
     connect-agents
+    create-flint-citizens
     connect-media
   ] [
     read-graph
@@ -117,6 +118,7 @@ to setup-py
   py:run "import kronecker as kron"
   py:run "from data import *"
   py:run "from messaging import *"
+  py:run "from louvain import *"
   py:run "import mag as MAG"
   py:run "from nlogo_graphs import *"
 end
@@ -140,16 +142,22 @@ to create-citizen [ id prior-vals malleable-vals ]
     set messages-believed []
     set is-flint? false
 
-    ; TODO: Get rid of this once we have different network structure
-    let rand random-float 1
-    if rand <= 0.1 [
-      set is-flint? true
-      set brain create-agent-brain id citizen-priors citizen-malleables prior-vals malleable-vals
-    ]
-
 ;    set size 0.5
     set size 1
     setxy random-xcor random-ycor
+  ]
+end
+
+to create-flint-citizens
+  ; TODO: Change this hard-coded value
+  let community flint-community 10
+  foreach community [ cit-id ->
+    ask citizen cit-id [
+      set is-flint? true
+      let prior-vals (map sample-attr-dist citizen-priors)
+      let malleable-vals (map sample-attr-dist citizen-malleables)
+      set brain create-agent-brain cit-id citizen-priors citizen-malleables prior-vals malleable-vals
+    ]
   ]
 end
 
@@ -935,6 +943,18 @@ to-report influencer-distance-paths [ influencer target message t ]
 ;  report (word "influencer_paths_within_distance(" citizen-arr "," edge-arr "," subscribers-arr ",'" target "'," message-dict "," t ")")
   report py:runresult(
     (word "influencer_paths_within_distance(" citizen-arr "," edge-arr "," subscribers-arr ",'" target "'," message-dict "," t ")")
+  )
+end
+
+;; Find a community in the graph that can become the Flint community based on
+;; community detection with the Louvain algorithm (ideally of size n).
+;;
+;; @param n -- The number of citizens ideally to look for in a community
+to-report flint-community [ en ]
+  let citizen-arr list-as-py-array (map [ cit -> agent-brain-as-py-dict [brain] of citizen cit ] (range N)) false
+  let edge-arr list-as-py-array (sort social-friends) true
+  report py:runresult(
+    (word "flint_community_nlogo(" citizen-arr "," edge-arr "," en ")")
   )
 end
 
@@ -1796,7 +1816,7 @@ CHOOSER
 graph-type
 graph-type
 "erdos-renyi" "watts-strogatz" "barabasi-albert" "mag" "facebook" "kronecker"
-5
+2
 
 SLIDER
 437
