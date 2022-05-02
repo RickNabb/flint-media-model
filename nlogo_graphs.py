@@ -295,12 +295,11 @@ number of nodes closest to n
 """
 
 def flint_community(G, n):   
-    # partition = community_louvain.best_partition(G)
     dendo = community_louvain.generate_dendrogram(G)
     list_mean = []
-    for level in range(len(dendo) - 1):
+    for level in range(len(dendo)):
         partition = community_louvain.partition_at_level(dendo, level)
-        arr = np.array(list(partition.values()))
+        arr = np.array(list(Counter(partition.values()).values()))
         mean = np.mean(arr)
         list_mean.append(mean)
     closest_mean = find_nearest(list_mean, n)
