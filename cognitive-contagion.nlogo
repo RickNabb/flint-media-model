@@ -149,7 +149,8 @@ end
 
 to create-flint-citizens
   ; TODO: Change this hard-coded value
-  let community flint-community 10
+  let community flint-community (n * flint-community-size)
+  show (word "flint community size " length community)
   foreach community [ cit-id ->
     ask citizen cit-id [
       set is-flint? true
@@ -1815,7 +1816,7 @@ CHOOSER
 graph-type
 graph-type
 "erdos-renyi" "watts-strogatz" "barabasi-albert" "mag" "facebook" "kronecker"
-2
+1
 
 SLIDER
 437
@@ -2033,6 +2034,21 @@ Kronecker
 11
 0.0
 1
+
+SLIDER
+530
+533
+702
+566
+flint-community-size
+flint-community-size
+0
+1
+0.01
+0.01
+1
+NIL
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
