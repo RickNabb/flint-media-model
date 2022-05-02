@@ -81,6 +81,7 @@ to setup
   ifelse not load-graph? [
     create-agents
     connect-agents
+    create-flint-citizens
     connect-media
   ] [
     read-graph
@@ -99,7 +100,7 @@ to setup
     layout-circle sort citizens 12
     repeat 2 [ layout-spring citizens social-friends 0.3 10 1 ]
   ]
-  if graph-type = "barabasi-albert" [
+  if graph-type = "barabasi-albert" or graph-type = "kronecker" [
     layout-radial citizens social-friends max_turtle
     layout-spring citizens social-friends 0.3 10 1
   ]
@@ -140,22 +141,35 @@ to create-citizen [ id prior-vals malleable-vals ]
     set messages-believed []
     set is-flint? false
 
-    ; TODO: Get rid of this once we have different network structure
-    let rand random-float 1
-    if rand <= 0.1 [
-      set is-flint? true
-      set brain create-agent-brain id citizen-priors citizen-malleables prior-vals malleable-vals
-    ]
-
 ;    set size 0.5
     set size 1
     setxy random-xcor random-ycor
   ]
 end
 
+to create-flint-citizens
+  ; TODO: Change this hard-coded value
+  let community flint-community (n * flint-community-size)
+  show (word "flint community size " length community)
+  foreach community [ cit-id ->
+    ask citizen cit-id [
+      set is-flint? true
+      let prior-vals (map sample-attr-dist citizen-priors)
+      let malleable-vals (map sample-attr-dist citizen-malleables)
+      set brain create-agent-brain cit-id citizen-priors citizen-malleables prior-vals malleable-vals
+    ]
+  ]
+end
+
 to create-citizenz
   let id 0
-  repeat N [
+  let en 0
+  ifelse graph-type != "kronecker" [
+    set en N
+  ] [
+    set en array_shape kronecker-seed ^ kronecker-k
+  ]
+  repeat en [
     create-citizen-dist id
     set id id + 1
   ]
@@ -245,7 +259,11 @@ to connect-agents
     ]
 ;    show [sort (list (dict-value brain "ID") (dict-value brain "A"))] of citizens
   ]
+  if graph-type = "kronecker" [
+    set G kronecker kronecker-seed kronecker-k
+  ]
 
+  ; Create links
   let edges (dict-value G "edges")
   foreach edges [ ed ->
     let end-1 (item 0 ed)
@@ -255,6 +273,9 @@ to connect-agents
 ;    show (word "Linking " cit1 "(" (dict-value [brain] of cit1 "A") ") and " cit2 "(" (dict-value [brain] of cit2 "A") ")")
     ask citizen end-1 [ create-social-friend-to citizen end-2 [ set weight citizen-citizen-influence ] ]
   ]
+
+  ; Remove isolates
+  ask citizens with [ empty? sort social-friend-neighbors ] [ die ]
 end
 
 to connect-media
@@ -869,6 +890,12 @@ to-report mag [ en attrs style ]
   )
 end
 
+to-report kronecker [ seed k ]
+  report py:runresult(
+    (word "kronecker_graph_bidirected(np.array(" seed ")," k ")")
+  )
+end
+
 ;; Connect a MAG graph based on values in the global mag-g variable (those values
 ;; are probabilities that two nodes in a graph will connect).
 to connect_mag
@@ -916,6 +943,18 @@ to-report influencer-distance-paths [ influencer target message t ]
 ;  report (word "influencer_paths_within_distance(" citizen-arr "," edge-arr "," subscribers-arr ",'" target "'," message-dict "," t ")")
   report py:runresult(
     (word "influencer_paths_within_distance(" citizen-arr "," edge-arr "," subscribers-arr ",'" target "'," message-dict "," t ")")
+  )
+end
+
+;; Find a community in the graph that can become the Flint community based on
+;; community detection with the Louvain algorithm (ideally of size n).
+;;
+;; @param n -- The number of citizens ideally to look for in a community
+to-report flint-community [ en ]
+  let citizen-arr list-as-py-array (map [ cit -> agent-brain-as-py-dict [brain] of citizen cit ] (range N)) false
+  let edge-arr list-as-py-array (sort social-friends) true
+  report py:runresult(
+    (word "flint_community_nlogo(" citizen-arr "," edge-arr "," en ")")
   )
 end
 
@@ -1304,9 +1343,9 @@ NIL
 
 SLIDER
 537
-584
+652
 667
-617
+685
 threshold
 threshold
 0
@@ -1339,7 +1378,7 @@ SWITCH
 91
 show-media-connections?
 show-media-connections?
-0
+1
 1
 -1000
 
@@ -1443,7 +1482,7 @@ SWITCH
 132
 show-social-friends?
 show-social-friends?
-1
+0
 1
 -1000
 
@@ -1487,9 +1526,9 @@ Aggregate Charts
 
 CHOOSER
 330
-635
+703
 472
-680
+748
 spread-type
 spread-type
 "simple" "complex" "cognitive"
@@ -1557,9 +1596,9 @@ NIL
 
 CHOOSER
 19
-634
+702
 172
-679
+747
 cognitive-fn
 cognitive-fn
 "linear-gullible" "linear-stubborn" "linear-mid" "threshold-gullible" "threshold-mid" "threshold-stubborn" "sigmoid-gullible" "sigmoid-stubborn" "sigmoid-mid"
@@ -1567,9 +1606,9 @@ cognitive-fn
 
 SLIDER
 165
-580
+648
 339
-613
+681
 simple-spread-chance
 simple-spread-chance
 0
@@ -1582,9 +1621,9 @@ HORIZONTAL
 
 SLIDER
 350
-580
+648
 524
-613
+681
 complex-spread-ratio
 complex-spread-ratio
 0
@@ -1597,9 +1636,9 @@ HORIZONTAL
 
 CHOOSER
 184
-635
+703
 323
-680
+748
 brain-type
 brain-type
 "discrete" "continuous"
@@ -1683,9 +1722,9 @@ media-agents?
 
 SLIDER
 20
-724
+792
 193
-757
+825
 cognitive-exponent
 cognitive-exponent
 -10
@@ -1698,9 +1737,9 @@ HORIZONTAL
 
 SLIDER
 20
-684
+752
 193
-717
+785
 cognitive-scalar
 cognitive-scalar
 -20
@@ -1713,9 +1752,9 @@ HORIZONTAL
 
 SWITCH
 200
-684
+752
 345
-717
+785
 cognitive-scalar?
 cognitive-scalar?
 1
@@ -1724,9 +1763,9 @@ cognitive-scalar?
 
 SWITCH
 203
-725
+793
 368
-758
+826
 cognitive-exponent?
 cognitive-exponent?
 0
@@ -1735,9 +1774,9 @@ cognitive-exponent?
 
 SLIDER
 20
-769
+837
 193
-802
+870
 cognitive-translate
 cognitive-translate
 -10
@@ -1750,9 +1789,9 @@ HORIZONTAL
 
 SWITCH
 203
-769
+837
 366
-802
+870
 cognitive-translate?
 cognitive-translate?
 0
@@ -1761,9 +1800,9 @@ cognitive-translate?
 
 TEXTBOX
 23
-556
+624
 211
-579
+647
 Contagion Parameters
 11
 0.0
@@ -1776,8 +1815,8 @@ CHOOSER
 455
 graph-type
 graph-type
-"erdos-renyi" "watts-strogatz" "barabasi-albert" "mag" "facebook"
-0
+"erdos-renyi" "watts-strogatz" "barabasi-albert" "mag" "facebook" "kronecker"
+1
 
 SLIDER
 437
@@ -1881,9 +1920,9 @@ mag-style
 
 SWITCH
 24
-580
+648
 157
-613
+681
 contagion-on?
 contagion-on?
 0
@@ -1959,6 +1998,57 @@ Link weight settings
 11
 0.0
 1
+
+INPUTBOX
+257
+489
+400
+574
+kronecker-seed
+[[0.6,0.16,0.24],\n  [0.40,0.2,0.4],\n  [0.21,0.14,0.65]]
+1
+1
+String
+
+SLIDER
+256
+580
+428
+613
+kronecker-k
+kronecker-k
+0
+10
+5.0
+1
+1
+NIL
+HORIZONTAL
+
+TEXTBOX
+261
+467
+411
+485
+Kronecker
+11
+0.0
+1
+
+SLIDER
+530
+533
+702
+566
+flint-community-size
+flint-community-size
+0
+1
+0.01
+0.01
+1
+NIL
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
@@ -2302,7 +2392,7 @@ false
 Polygon -7500403 true true 270 75 225 30 30 225 75 270
 Polygon -7500403 true true 30 75 75 30 270 225 225 270
 @#$#@#$#@
-NetLogo 6.2.2
+NetLogo 6.1.1
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@

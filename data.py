@@ -53,41 +53,6 @@ def summary_statistics(l):
   else:
     return (-1, -1, -1)
 
-def create_discrete_dist(vals):
-    dist = []
-    for i in range(0, sum(vals)):
-        total = 0
-        for j in range(0, len(vals)):
-            total += vals[j]
-            if i <= total:
-                dist.append(j)
-                break
-    return dist
-
-def create_discrete_dist_sm(vals):
-    dist = []
-    total = 0
-    for val in vals:
-        total += val
-        dist.append(total)
-    return dist
-
-def sample_dist(vals, dist):
-  choice = random() * sum(vals)
-  for i in range(0, len(dist)):
-    val = dist[i]
-    if choice <= val:
-      return i
-  return -1
-
-def test_create_dist():
-    vals = [27,42,31]
-    dist = create_discrete_dist_sm(vals)
-    samples = [0,0,0]
-    for i in range(0, 1000):
-        samples[sample_dist(vals, dist)] += 1
-    print(samples)
-
 """
 Sample a distribution given a specific attribute. This distribution may
 also depend on another, and if so, the function recursively calls

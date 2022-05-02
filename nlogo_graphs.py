@@ -8,8 +8,24 @@ Author: Nick Rabb (nick.rabb2@gmail.com)
 import networkx as nx
 import numpy as np
 import mag
+import community as community_louvain
 from messaging import *
 from random import random
+from kronecker import kronecker_pow
+from utils import find_nearest, get_keys
+import matplotlib.cm as cm
+import matplotlib.pyplot as plt
+from collections import Counter
+
+'''
+Return a NetLogo-safe Erdos-Renyi graph from the NetworkX package.
+
+:param n: The number of nodes for the graph.
+:param p: The probability of two random nodes connecting.
+'''
+def ER_graph_bidirected(n, p):
+  G = nx.erdos_renyi_graph(n, p)
+  return nlogo_safe_nodes_edges(bidirected_graph(G))
 
 '''
 Return a NetLogo-safe Erdos-Renyi graph from the NetworkX package.
@@ -28,6 +44,17 @@ Return a Netlogo-safe Watts-Strogatz graph from the NetworkX package.
 :param k: The number of initial neighbors.
 :param p: The probability of an edge rewiring.
 '''
+def WS_graph_bidirected(n, k, p):
+  G = nx.watts_strogatz_graph(n, k, p)
+  return nlogo_safe_nodes_edges(bidirected_graph(G))
+
+'''
+Return a Netlogo-safe Watts-Strogatz graph from the NetworkX package.
+
+:param n: The number of nodes.
+:param k: The number of initial neighbors.
+:param p: The probability of an edge rewiring.
+'''
 def WS_graph(n, k, p):
   G = nx.watts_strogatz_graph(n, k, p)
   return nlogo_safe_nodes_edges(G)
@@ -38,9 +65,47 @@ Return a Netlogo-safe Barabasi-Albert graph from the NetworkX package.
 :param n: The number of nodes.
 :param m: The number of edges to connect with when a node is added.
 '''
-def BA_graph(n, m):
+def BA_graph_bidirected(n, m):
   G = nx.barabasi_albert_graph(n, m)
   return nlogo_safe_nodes_edges(bidirected_graph(G))
+
+'''
+Return a Netlogo-safe Barabasi-Albert graph from the NetworkX package.
+
+:param n: The number of nodes.
+:param m: The number of edges to connect with when a node is added.
+'''
+def BA_graph(n, m):
+  G = nx.barabasi_albert_graph(n, m)
+  return nlogo_safe_nodes_edges(G)
+
+'''
+Create a MAG graph for N nodes, given L attributes, and a style of connection
+if there is no specified connection affinity matrix.
+
+:param n: The number of nodes.
+:param attrs: A list of attributes to gather Theta affinity matrices for in order
+to properly calculate the product of all attribute affinities for the matrix.
+:param style: A string denoting how to connect the attributes - default, homophilic, or heterophilic.
+'''
+def MAG_graph_bidirected(n, attrs, style, resolution):
+  (p_edge, L) = mag.attr_mag(n, attrs, style, resolution)
+  # print(p_edge)
+  # print(L)
+  G = nx.Graph()
+  G.add_nodes_from(range(0, len(p_edge[0])))
+  for i in range(0,len(p_edge)):
+    for j in range(0,len(p_edge)):
+      rand = random()
+      if (rand <= p_edge[(i,j)]):
+        # if (abs(L[i][0]-L[j][0]) >= 2):
+          # print(f'Chance to connect {L[i]} and {L[j]}: {p_edge[(i,j)]}')
+          # print(f'Rolled {rand}: {rand <= p_edge[(i,j)]}')
+        G.add_edge(i, j)
+  # print(f'Num edges: {len(G.edges)}')
+  nlogo_G = nlogo_safe_nodes_edges(bidirected_graph(G))
+  nlogo_G.update({'L': L})
+  return nlogo_G
 
 '''
 Create a MAG graph for N nodes, given L attributes, and a style of connection
@@ -69,6 +134,51 @@ def MAG_graph(n, attrs, style, resolution):
   nlogo_G = nlogo_safe_nodes_edges(G)
   nlogo_G.update({'L': L})
   return nlogo_G
+
+def kronecker_graph(seed, k):
+  '''
+  Make a kronecker graph from a given seed to a power.
+
+  :param seed: An np array to Kronecker power.
+  :param k: An integer to raise the graph to the Kronecker power of.
+  '''
+  G_array = kronecker_pow(seed, k)
+  G = nx.Graph()
+  G.add_nodes_from(range(0, G_array.shape[0]))
+  for i in range(G_array.shape[0]):
+    row = G_array[i]
+    for j in range(G_array.shape[1]):
+      if i == j:
+        continue
+      p = row[j]
+      if random() < p:
+        G.add_edge(i,j)
+  largest_connected_component = max(nx.connected_components(G), key=len)
+  G.remove_nodes_from(G.nodes - largest_connected_component)
+  # return G
+  return nlogo_safe_nodes_edges(G)
+
+def kronecker_graph_bidirected(seed, k):
+  '''
+  Make a kronecker graph from a given seed to a power.
+
+  :param seed: An np array to Kronecker power.
+  :param k: An integer to raise the graph to the Kronecker power of.
+  '''
+  G_array = kronecker_pow(seed, k)
+  G = nx.Graph()
+  G.add_nodes_from(range(0, G_array.shape[0]))
+  for i in range(G_array.shape[0]):
+    row = G_array[i]
+    for j in range(G_array.shape[1]):
+      if i == j:
+        continue
+      p = row[j]
+      if random() < p:
+        G.add_edge(i,j)
+  largest_connected_component = max(nx.connected_components(G), key=len)
+  G.remove_nodes_from(G.nodes - largest_connected_component)
+  return nlogo_safe_nodes_edges(bidirected_graph(G))
 
 def bidirected_graph(G):
   '''
@@ -151,3 +261,57 @@ def influencer_paths_within_distance(citizens, friend_links, subscribers, target
       threshold_paths[subscriber] = dist_path
       # threshold_paths[subscriber] = paths[subscriber]
   return threshold_paths
+
+def plot_graph_communities(G, level):
+  '''
+
+  '''
+  dendrogram = community.generate_dendrogram(G)
+  partition = community.partition_at_level(dendrogram, level)
+  pos = nx.spring_layout(G)
+  cmap = cm.get_cmap('viridis', max(partition.values()) + 1)
+  nx.draw_networkx_nodes(G, pos, partition.keys(), node_size=40, cmap=cmap, node_color=list(partition.values()))
+  nx.draw_networkx_edges(G, pos, alpha=0.5)
+  plt.show()
+
+def flint_community_nlogo(citizens, social_friends, n):
+    '''
+    First convert the citizen and edge arrays into a graph, then
+    call the flint community function.
+
+    :param citizens: An array of citizen nodes in the graph.
+    :param social_friends: An array of citizen social friend edges in the graph.
+    :param n: The ideal size of community to look for.
+    '''
+    G = nlogo_graph_to_nx(citizens, social_friends)
+    return flint_community(G, n)
+
+"""
+Returns an array of the nodes in the community of a graph with 
+number of nodes closest to n
+
+:param G: graph to detect communities
+:param n: approximate number of nodes in community    
+"""
+
+def flint_community(G, n):   
+    dendo = community_louvain.generate_dendrogram(G)
+    list_mean = []
+    for level in range(len(dendo)):
+        partition = community_louvain.partition_at_level(dendo, level)
+        arr = np.array(list(Counter(partition.values()).values()))
+        mean = np.mean(arr)
+        list_mean.append(mean)
+    closest_mean = find_nearest(list_mean, n)
+    lvl = list_mean.index(closest_mean)
+    partition = community_louvain.partition_at_level(dendo, lvl)
+    # value is number of nodes in community [key]
+    count = Counter(partition.values())
+    # array of numbers of nodes in each community
+    values = list(count.values())
+    # the number of nodes in the community that has the closest size to n
+    comm_size = find_nearest(values, n)
+    # community that corresponds to closest number of nodes
+    closest_community = list(count.keys())[list(count.values()).index(comm_size)]    
+    nodes_in_partition = get_keys(partition, closest_community)
+    return nodes_in_partition
