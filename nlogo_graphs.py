@@ -315,3 +315,15 @@ def flint_community(G, n):
     closest_community = list(count.keys())[list(count.values()).index(comm_size)]    
     nodes_in_partition = get_keys(partition, closest_community)
     return nodes_in_partition
+
+def nlogo_community_sizes_by_level(citizens, social_friends):
+  G = nlogo_graph_to_nx(citizens, social_friends)
+  dendrogram = community_louvain.generate_dendrogram(G)
+  levels = len(dendrogram)
+  return [ max(list(community_louvain.partition_at_level(dendrogram, level).values())) for level in range(levels) ]
+
+def nlogo_communities_by_level(citizens, social_friends):
+  G = nlogo_graph_to_nx(citizens, social_friends)
+  dendrogram = community_louvain.generate_dendrogram(G)
+  levels = len(dendrogram)
+  return [ community_louvain.partition_at_level(dendrogram, level) for level in range(levels) ]

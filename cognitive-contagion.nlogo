@@ -148,7 +148,6 @@ to create-citizen [ id prior-vals malleable-vals ]
 end
 
 to create-flint-citizens
-  ; TODO: Change this hard-coded value
   let community flint-community (n * flint-community-size)
   show (word "flint community size " length community)
   foreach community [ cit-id ->
@@ -178,12 +177,14 @@ end
 to create-media
   if media-agents? [
     ; Define something that describes the media ecosystem
-    ; Draw from that distribution while creating media agents -- power dist = np.random.power(a, size=n)
-    ; Make a mechanism that distinguishes between "types" of media agents (local vs natl) based on their edges drawn from the dist
-    ; Make a mechanism that makes diff types of agents connect to diff portions of the graph
-    ; - Locals connect to different small clusters
-    ; - Natl connects across the entire graph
-    ; Initialize them w/ a brain but no belief about A
+    ; TODO:
+    ; [ ] Use the community-sizes-by-level fn to create that many media for each level
+    ; [ ] Then loop through those levels and connect nodes to their appropriate media
+
+    let level-sizes community-sizes-by-level
+    foreach level-sizes [ level ->
+
+    ]
 
 ;    create-medias 1 [
 ;      let b create-agent-brain 1 [] [] [] []
@@ -955,6 +956,22 @@ to-report flint-community [ en ]
   let edge-arr list-as-py-array (sort social-friends) true
   report py:runresult(
     (word "flint_community_nlogo(" citizen-arr "," edge-arr "," en ")")
+  )
+end
+
+to-report communities-by-level
+  let citizen-arr list-as-py-array (map [ cit -> agent-brain-as-py-dict [brain] of citizen cit ] (range N)) false
+  let edge-arr list-as-py-array (sort social-friends) true
+  report py:runresult(
+    (word "nlogo_communities_by_level(" citizen-arr "," edge-arr ")")
+  )
+end
+
+to-report community-sizes-by-level
+  let citizen-arr list-as-py-array (map [ cit -> agent-brain-as-py-dict [brain] of citizen cit ] (range N)) false
+  let edge-arr list-as-py-array (sort social-friends) true
+  report py:runresult(
+    (word "nlogo_community_sizes_by_level(" citizen-arr "," edge-arr ")")
   )
 end
 
