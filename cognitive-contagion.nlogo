@@ -181,7 +181,6 @@ end
 to create-media
   if media-agents? [
     let level-sizes community-sizes-by-level communities
-    show level-sizes
     foreach level-sizes [ level ->
 ;      show (word "creating " level " medias")
       create-medias (level + 1) [
@@ -260,7 +259,7 @@ to connect-media
   let level-sizes community-sizes-by-level communities
   let media-id-base n
   let i 0
-  foreach communities-by-level [ level ->
+  foreach communities [ level ->
     foreach level [ cit-media-pair ->
       let media-id media-id-base + (item 1 cit-media-pair)
 ;      show (word "creating ties from media " media-id " to " (item 0 cit-media-pair) " with media base " media-id-base)
@@ -275,9 +274,9 @@ to connect-media
       set i i + 1
     ]
   ]
-  ask medias [
-    set color scale-color green (length sort subscriber-neighbors) 100 0
-  ]
+;  ask medias [
+;    set color scale-color green (length sort subscriber-neighbors) 100 0
+;  ]
 end
 
 ;;;;;;;;;;;;;;;;;
@@ -401,7 +400,7 @@ end
 to step
   if contagion-on? [
     ;; In the case where we do not have influencer agents, simply do a contagion from the agent perspective
-    ask citizens with [ not is-agent-brain-empty? self ] [
+    ask turtles with [ not is-agent-brain-empty? self ] [
       let c self
       ask out-link-neighbors [
        ; show (word "Citizen " self " receiving message " (agent-brain-malleable-values c) " from citizen " c)
@@ -417,6 +416,9 @@ end
 
 to update-agents
   ask citizens [
+    update-citizen
+  ]
+  ask medias [
     update-citizen
   ]
 end
@@ -445,6 +447,13 @@ end
 ;  ]
 ;end
 
+to-report agent-type-influence [ p sender receiver ]
+  if is-citizen? sender and is-citizen? receiver [ set p p * citizen-citizen-influence ]
+  if is-media? sender and is-citizen? receiver [ set p p * media-citizen-influence ]
+  if is-citizen? sender and is-media? receiver [ set p p * citizen-media-influence ]
+  report p
+end
+
 ;; Have a citizen agent receive a message: hear it, either believe it or not, and subsequently either
 ;; share it or not.
 ;;
@@ -463,6 +472,7 @@ to receive-message [ cit sender message message-id ]
         let expon 1
         let trans 0
         let dist (dist-to-agent-brain brain message)
+;        show (word "distance to brain " dist)
 
         if cognitive-scalar? [ set scalar cognitive-scalar ]
         if cognitive-exponent? [ set expon cognitive-exponent ]
@@ -482,6 +492,8 @@ to receive-message [ cit sender message message-id ]
 
         ;; Whether or not to believe the message
         let roll random-float 1
+        set p agent-type-influence p sender cit
+
         if roll <= p [
 ;          show (word "believed with p" p " and roll " roll)
           let b brain
@@ -489,11 +501,12 @@ to receive-message [ cit sender message message-id ]
           believe-message self message-id message
 
           ; Return [-1 -1] if both are not already present
-          let beliefs-from-message (map [ attr -> (list attr (dict-value brain attr)) ] (map [ bel -> item 0 bel ] message))
-          let non-empty-message filter [ bel -> (dict-value beliefs-from-message (item 0 bel)) = -1 ] message
-          show non-empty-message
-          ask social-friend-neighbors [
-            receive-message self cit non-empty-message message-id
+          let beliefs-from-message (map [ attr -> (list attr (dict-value b attr)) ] (map [ bel -> item 0 bel ] message))
+          let non-empty-message filter [ bel -> (dict-value beliefs-from-message (item 0 bel)) != -1 ] message
+          if not empty? non-empty-message [
+            ask out-link-neighbors [
+              receive-message self cit non-empty-message message-id
+            ]
           ]
         ]
         update-citizen
@@ -501,12 +514,14 @@ to receive-message [ cit sender message message-id ]
 
       if spread-type = "simple" [
         let roll random-float 1
-        if roll <= simple-spread-chance [
+        let p agent-type-influence simple-spread-chance sender cit
+
+        if roll <= p [
           ;show(word "believing " message-id)
           ;show (believe-message-py brain message)
           set brain (believe-message-py brain message)
           believe-message self message-id message
-          ask social-friend-neighbors [
+          ask out-link-neighbors [
             receive-message self cit message message-id
           ]
         ]
@@ -531,7 +546,7 @@ to receive-message [ cit sender message message-id ]
           set brain (believe-message-py brain message)
           believe-message self message-id message
           ;; Unsure if this sharing behavior is correct...
-          ask social-friend-neighbors [
+          ask out-link-neighbors [
             receive-message self cit message message-id
           ]
         ]
@@ -1136,6 +1151,9 @@ end
 to-report list-as-py-dict [ l key-quotes? val-quotes? ]
   let py-dict "{ "
   let i 1
+
+  if empty? l [ set py-dict (word py-dict "}") ]
+
   foreach l [ el ->
     ;show(tuple-list-as-py-dict el)
     ifelse i = length l
@@ -1470,7 +1488,7 @@ SLIDER
 N
 N
 0
-1000
+10000
 1000.0
 10
 1
@@ -1626,7 +1644,7 @@ simple-spread-chance
 simple-spread-chance
 0
 1
-0.59
+0.15
 0.01
 1
 NIL
@@ -1665,8 +1683,8 @@ SLIDER
 tick-end
 tick-end
 30
-150
-99.0
+1000
+495.0
 1
 1
 NIL
@@ -1829,7 +1847,7 @@ CHOOSER
 graph-type
 graph-type
 "erdos-renyi" "watts-strogatz" "barabasi-albert" "mag" "facebook" "kronecker"
-1
+2
 
 SLIDER
 437
@@ -1905,7 +1923,7 @@ ba-m
 ba-m
 0
 20
-3.0
+10.0
 1
 1
 NIL
@@ -1966,7 +1984,7 @@ citizen-citizen-influence
 citizen-citizen-influence
 0
 1
-1.0
+0.5
 0.01
 1
 NIL
@@ -1981,7 +1999,7 @@ citizen-media-influence
 citizen-media-influence
 0
 1
-0.1
+0.05
 0.01
 1
 NIL
@@ -2057,8 +2075,8 @@ flint-community-size
 flint-community-size
 0
 1
-0.25
-0.01
+0.001
+0.001
 1
 NIL
 HORIZONTAL
