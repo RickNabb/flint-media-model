@@ -30,6 +30,9 @@ globals [
   citizen-priors
   citizen-malleables
 
+  ;; Media ecosystem
+  communities
+
   ;; For experiments
   contagion-dir
 ]
@@ -79,9 +82,11 @@ to setup
   ]
 
   ifelse not load-graph? [
-    create-agents
+    create-citizenz
     connect-agents
+    set communities communities-by-level
     create-flint-citizens
+    create-media
     connect-media
   ] [
     read-graph
@@ -148,8 +153,7 @@ to create-citizen [ id prior-vals malleable-vals ]
 end
 
 to create-flint-citizens
-  let community flint-community (n * flint-community-size)
-  show (word "flint community size " length community)
+  let community (flint-community communities (n * flint-community-size))
   foreach community [ cit-id ->
     ask citizen cit-id [
       set is-flint? true
@@ -176,45 +180,18 @@ end
 
 to create-media
   if media-agents? [
-    ; Define something that describes the media ecosystem
-    ; TODO:
-    ; [ ] Use the community-sizes-by-level fn to create that many media for each level
-    ; [ ] Then loop through those levels and connect nodes to their appropriate media
-
-    let level-sizes community-sizes-by-level
+    let level-sizes community-sizes-by-level communities
+    show level-sizes
     foreach level-sizes [ level ->
-
-    ]
-
-;    create-medias 1 [
-;      let b create-agent-brain 1 [] [] [] []
-;      set brain b
-;      set cur-message-id 0
-;      setxy -4 1
-;      set color green
-;      set idee "ONE"
-;    ]
-;
-;    create-medias 2 [
-;      let b create-agent-brain 2 [] [] [] []
-;      set brain b
-;      set cur-message-id 0
-;      setxy -2 1
-;      set color green
-;      set idee "TWO"
-;    ]
-
-    create-medias 3 [
-      let b create-agent-brain 3 [] [] [] []
-      set brain b
-      set cur-message-id 0
-      ;setxy 0 1
-      setxy random-xcor random-ycor
-      set color green
-      set idee "THR"
-      ;Cat's bug exp
-      set messages-heard []
-      set messages-believed []
+;      show (word "creating " level " medias")
+      create-medias (level + 1) [
+        set brain create-agent-brain 0 [] [] [] []
+        set cur-message-id 0
+        setxy random-xcor random-ycor
+        set color green
+        set messages-heard []
+        set messages-believed []
+      ]
     ]
   ]
 end
@@ -280,22 +257,27 @@ to connect-agents
 end
 
 to connect-media
-  let u 0
-  ask medias [
-    let m self
-    ;; TODO: This is a placeholder -- it should be changed
-    ask n-of 5 citizens [
-;      let t self
-;      if dist-to-agent-brain brain ([media-attrs] of m) <= epsilon [
-      create-subscriber-from m [ set weight media-citizen-influence ]
-      create-subscriber-to m [ set weight citizen-media-influence ]
-;      ]
+  let level-sizes community-sizes-by-level communities
+  let media-id-base n
+  let i 0
+  foreach communities-by-level [ level ->
+    foreach level [ cit-media-pair ->
+      let media-id media-id-base + (item 1 cit-media-pair)
+;      show (word "creating ties from media " media-id " to " (item 0 cit-media-pair) " with media base " media-id-base)
+      ask citizen (read-from-string (item 0 cit-media-pair)) [
+        create-subscriber-from (media media-id) [ set weight media-citizen-influence ]
+        create-subscriber-to (media media-id) [ set weight citizen-media-influence ]
+      ]
+    ]
+
+    if i < length level-sizes [
+      set media-id-base media-id-base + (item i level-sizes)
+      set i i + 1
     ]
   ]
-end
-
-to setup-belief-plot
-
+  ask medias [
+    set color scale-color green (length sort subscriber-neighbors) 100 0
+  ]
 end
 
 ;;;;;;;;;;;;;;;;;
@@ -502,11 +484,16 @@ to receive-message [ cit sender message message-id ]
         let roll random-float 1
         if roll <= p [
 ;          show (word "believed with p" p " and roll " roll)
+          let b brain
           set brain (believe-message-py brain message)
           believe-message self message-id message
 
+          ; Return [-1 -1] if both are not already present
+          let beliefs-from-message (map [ attr -> (list attr (dict-value brain attr)) ] (map [ bel -> item 0 bel ] message))
+          let non-empty-message filter [ bel -> (dict-value beliefs-from-message (item 0 bel)) = -1 ] message
+          show non-empty-message
           ask social-friend-neighbors [
-            receive-message self cit message message-id
+            receive-message self cit non-empty-message message-id
           ]
         ]
         update-citizen
@@ -951,11 +938,9 @@ end
 ;; community detection with the Louvain algorithm (ideally of size n).
 ;;
 ;; @param n -- The number of citizens ideally to look for in a community
-to-report flint-community [ en ]
-  let citizen-arr list-as-py-array (map [ cit -> agent-brain-as-py-dict [brain] of citizen cit ] (range N)) false
-  let edge-arr list-as-py-array (sort social-friends) true
+to-report flint-community [ comm en ]
   report py:runresult(
-    (word "flint_community_nlogo(" citizen-arr "," edge-arr "," en ")")
+    (word "flint_community(" (list-of-dicts-as-py-list comm false false) "," en")")
   )
 end
 
@@ -967,12 +952,8 @@ to-report communities-by-level
   )
 end
 
-to-report community-sizes-by-level
-  let citizen-arr list-as-py-array (map [ cit -> agent-brain-as-py-dict [brain] of citizen cit ] (range N)) false
-  let edge-arr list-as-py-array (sort social-friends) true
-  report py:runresult(
-    (word "nlogo_community_sizes_by_level(" citizen-arr "," edge-arr ")")
-  )
+to-report community-sizes-by-level [ comm ]
+  report map [ level -> max (map [ cit-comm-pair -> item 1 cit-comm-pair ] level) ] comm
 end
 
 ;;;;;;;;;;;;;;;
@@ -1135,6 +1116,21 @@ to-report multi-list-as-tuple-list [ ml key-quotes? val-quotes? ]
     ;show(py-dict)
   ]
   report list attr py-dict
+end
+
+;; In the case that there is a list of dictionaries in nlogo (e.g. [ ['a': 1, 'b': 2], ['c': 3] ]),
+;; convert it into a python syntax list of dictionaries
+to-report list-of-dicts-as-py-list [ l key-quotes? val-quotes? ]
+  let py-list "[ "
+  let i 1
+  foreach l [ dict ->
+    ifelse i = length l
+    [ set py-list (word py-list (list-as-py-dict dict key-quotes? val-quotes?) " ]") ]
+    [ set py-list (word py-list (list-as-py-dict dict key-quotes? val-quotes?) ",") ]
+
+    set i i + 1
+  ]
+  report py-list
 end
 
 to-report list-as-py-dict [ l key-quotes? val-quotes? ]
@@ -1475,7 +1471,7 @@ N
 N
 0
 1000
-500.0
+1000.0
 10
 1
 NIL
@@ -1549,7 +1545,7 @@ CHOOSER
 spread-type
 spread-type
 "simple" "complex" "cognitive"
-1
+2
 
 TEXTBOX
 302
@@ -2061,7 +2057,7 @@ flint-community-size
 flint-community-size
 0
 1
-0.01
+0.25
 0.01
 1
 NIL
