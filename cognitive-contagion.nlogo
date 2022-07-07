@@ -35,6 +35,9 @@ globals [
 
   ;; For experiments
   contagion-dir
+
+  ;; Agents who believed at t-1
+  num-agents-adopted
 ]
 
 citizens-own [
@@ -398,6 +401,9 @@ to go
 end
 
 to step
+  if (ticks mod 5) = 0 [
+    set num-agents-adopted 0
+  ]
   if contagion-on? [
     ;; In the case where we do not have influencer agents, simply do a contagion from the agent perspective
     ask turtles with [ not is-agent-brain-empty? self ] [
@@ -507,6 +513,7 @@ to receive-message [ cit sender message message-id ]
             ask out-link-neighbors [
               receive-message self cit non-empty-message message-id
             ]
+            set num-agents-adopted num-agents-adopted + 1
           ]
         ]
         update-citizen
@@ -519,10 +526,18 @@ to receive-message [ cit sender message message-id ]
         if roll <= p [
           ;show(word "believing " message-id)
           ;show (believe-message-py brain message)
+          let b brain
           set brain (believe-message-py brain message)
           believe-message self message-id message
-          ask out-link-neighbors [
-            receive-message self cit message message-id
+
+          ; Return [-1 -1] if both are not already present
+          let beliefs-from-message (map [ attr -> (list attr (dict-value b attr)) ] (map [ bel -> item 0 bel ] message))
+          let non-empty-message filter [ bel -> (dict-value beliefs-from-message (item 0 bel)) != -1 ] message
+          if not empty? non-empty-message [
+            ask out-link-neighbors [
+              receive-message self cit non-empty-message message-id
+            ]
+            set num-agents-adopted num-agents-adopted + 1
           ]
         ]
       ]
@@ -541,13 +556,20 @@ to receive-message [ cit sender message message-id ]
           ]
         ]
 ;        show (word "Citizen " cit "has ratio " (believing-neighbors / length sort social-friend-neighbors))
-        if (believing-neighbors / length sort social-friend-neighbors) >= complex-spread-ratio [
+        if (believing-neighbors / length sort out-link-neighbors) >= complex-spread-ratio [
 ;          show (word "Citizen " cit " believing with ratio " (believing-neighbors / length sort social-friend-neighbors))
+          let b brain
           set brain (believe-message-py brain message)
           believe-message self message-id message
-          ;; Unsure if this sharing behavior is correct...
-          ask out-link-neighbors [
-            receive-message self cit message message-id
+
+          ; Return [-1 -1] if both are not already present
+          let beliefs-from-message (map [ attr -> (list attr (dict-value b attr)) ] (map [ bel -> item 0 bel ] message))
+          let non-empty-message filter [ bel -> (dict-value beliefs-from-message (item 0 bel)) != -1 ] message
+          if not empty? non-empty-message [
+            ask out-link-neighbors [
+              receive-message self cit non-empty-message message-id
+            ]
+            set num-agents-adopted num-agents-adopted + 1
           ]
         ]
       ]
@@ -1283,10 +1305,10 @@ NIL
 1
 
 PLOT
-728
-392
-1125
-585
+1172
+717
+1569
+910
 A Histogram
 A Value
 Number of Agents
@@ -1301,10 +1323,10 @@ PENS
 "default" 1.0 1 -16777216 true "" "plot-pen-reset  ;; erase what we plotted before\nset-plot-x-range -1 (belief-resolution + 1)\n\nhistogram [dict-value brain \"A\"] of citizens"
 
 MONITOR
-725
-593
-783
-638
+1168
+918
+1226
+963
 0
 count citizens with [dict-value brain \"A\" = 0]
 1
@@ -1312,10 +1334,10 @@ count citizens with [dict-value brain \"A\" = 0]
 11
 
 MONITOR
-783
-593
-840
-638
+1227
+918
+1284
+963
 1
 count citizens with [dict-value brain \"A\" = 1]
 1
@@ -1323,10 +1345,10 @@ count citizens with [dict-value brain \"A\" = 1]
 11
 
 MONITOR
-845
-593
-911
-638
+1288
+918
+1354
+963
 2
 count citizens with [dict-value brain \"A\" = 2]
 1
@@ -1334,10 +1356,10 @@ count citizens with [dict-value brain \"A\" = 2]
 11
 
 MONITOR
-917
-593
-975
-638
+1360
+918
+1418
+963
 3
 count citizens with [dict-value brain \"A\" = 3]
 1
@@ -1345,10 +1367,10 @@ count citizens with [dict-value brain \"A\" = 3]
 11
 
 MONITOR
-973
-593
-1031
-638
+1417
+918
+1475
+963
 4
 count citizens with [dict-value brain \"A\" = 4]
 1
@@ -1373,10 +1395,10 @@ NIL
 0
 
 SLIDER
-537
-652
-667
-685
+527
+649
+657
+682
 threshold
 threshold
 0
@@ -1471,10 +1493,10 @@ Simulation Controls
 1
 
 TEXTBOX
-730
-334
-880
-352
+1173
+659
+1323
+677
 Simulation State Plots
 14
 0.0
@@ -1518,10 +1540,10 @@ show-social-friends?
 -1000
 
 TEXTBOX
-728
-362
-878
-380
+1172
+687
+1322
+705
 Cognitive State
 11
 0.0
@@ -1644,22 +1666,22 @@ simple-spread-chance
 simple-spread-chance
 0
 1
-0.15
+0.25
 0.01
 1
 NIL
 HORIZONTAL
 
 SLIDER
-350
-648
-524
-681
+347
+649
+521
+682
 complex-spread-ratio
 complex-spread-ratio
 0
 1
-0.35
+0.01
 0.01
 1
 NIL
@@ -1684,7 +1706,7 @@ tick-end
 tick-end
 30
 1000
-495.0
+1000.0
 1
 1
 NIL
@@ -1719,10 +1741,10 @@ false
 PENS
 
 MONITOR
-1028
-593
-1086
-638
+1472
+918
+1530
+963
 5
 count citizens with [dict-value brain \"A\" = 5]
 17
@@ -1730,10 +1752,10 @@ count citizens with [dict-value brain \"A\" = 5]
 11
 
 MONITOR
-1090
-593
-1148
-638
+1533
+918
+1591
+963
 6
 count citizens with [dict-value brain \"A\" = 6]
 17
@@ -1908,7 +1930,7 @@ watts-strogatz-k
 watts-strogatz-k
 0
 N - 1
-5.0
+10.0
 1
 1
 NIL
@@ -1916,9 +1938,9 @@ HORIZONTAL
 
 SLIDER
 435
-483
+442
 560
-516
+475
 ba-m
 ba-m
 0
@@ -1931,9 +1953,9 @@ HORIZONTAL
 
 TEXTBOX
 437
-460
-625
-483
+418
+543
+442
 Barabasi-Albert (ba)
 11
 0.0
@@ -1984,7 +2006,7 @@ citizen-citizen-influence
 citizen-citizen-influence
 0
 1
-0.5
+0.07
 0.01
 1
 NIL
@@ -2075,11 +2097,29 @@ flint-community-size
 flint-community-size
 0
 1
-0.001
+0.005
 0.001
 1
 NIL
 HORIZONTAL
+
+PLOT
+733
+324
+1110
+583
+Num agents adopted new belief
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -16777216 true "" "plot num-agents-adopted"
 
 @#$#@#$#@
 ## WHAT IS IT?
@@ -2618,6 +2658,80 @@ export-plot "percent-agent-beliefs" (word contagion-dir "/" rand "_percent-agent
       <value value="&quot;erdos-renyi&quot;"/>
       <value value="&quot;watts-strogatz&quot;"/>
       <value value="&quot;barabasi-albert&quot;"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="graph-exp" repetitions="10" sequentialRunOrder="false" runMetricsEveryStep="false">
+    <setup>setup
+set-cognitive-contagion-params
+let run-dir (word sim-output-dir substring date-time-safe 11 (length date-time-safe) "-" belief-resolution)
+set contagion-dir (word run-dir "/" brain-type "/" spread-type "/" message-file "/" cognitive-fn "/" graph-type)
+py:run (word "if not os.path.isdir('" run-dir "'): os.mkdir('" run-dir "')")
+py:run (word "if not os.path.isdir('" run-dir "/" brain-type "'): os.mkdir('" run-dir "/" brain-type "')")
+py:run (word "if not os.path.isdir('" run-dir "/" brain-type  "/" spread-type "'): os.mkdir('" run-dir "/" brain-type "/" spread-type "')")
+py:run (word "if not os.path.isdir('" run-dir "/" brain-type  "/" spread-type "/" message-file "'): os.mkdir('" run-dir "/" brain-type "/" spread-type "/" message-file "')")
+py:run (word "if not os.path.isdir('" run-dir "/" brain-type  "/" spread-type "/" message-file "/" cognitive-fn "'): os.mkdir('" run-dir "/" brain-type "/" spread-type "/" message-file "/" cognitive-fn "')")
+py:run (word "if not os.path.isdir('" contagion-dir "'): os.mkdir('" contagion-dir "')")</setup>
+    <go>go</go>
+    <final>let rand random 10000
+export-world (word contagion-dir "/" rand "_world.csv")
+export-plot "percent-agent-beliefs" (word contagion-dir "/" rand "_percent-agent-beliefs.csv")</final>
+    <metric>count citizens</metric>
+    <enumeratedValueSet variable="contagion-on?">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="load-graph?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="media-agents?">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="belief-resolution">
+      <value value="7"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="brain-type">
+      <value value="&quot;discrete&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="N">
+      <value value="1000"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="tick-end">
+      <value value="1000"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="spread-type">
+      <value value="&quot;simple&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="simple-spread-chance">
+      <value value="0.1"/>
+      <value value="0.25"/>
+      <value value="0.5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="graph-type">
+      <value value="&quot;barabasi-albert&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="ba-m">
+      <value value="3"/>
+      <value value="10"/>
+      <value value="25"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="epsilon">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="citizen-media-influence">
+      <value value="0.01"/>
+      <value value="0.05"/>
+      <value value="0.1"/>
+      <value value="0.25"/>
+      <value value="0.5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="citizen-citizen-influence">
+      <value value="0.01"/>
+      <value value="0.05"/>
+      <value value="0.1"/>
+      <value value="0.25"/>
+      <value value="0.5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="flint-community-size">
+      <value value="0.005"/>
     </enumeratedValueSet>
   </experiment>
 </experiments>
