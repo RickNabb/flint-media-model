@@ -1,3 +1,4 @@
+import os
 import numpy as np 
 
 '''
@@ -32,3 +33,10 @@ def get_keys(dict, value):
             list_keys.append(item[0])
     return list_keys
     
+def create_nested_dirs(path):
+  path_thus_far = path.split('/')[0]
+  for d in path.split('/')[1:]:
+    if not os.path.isdir(f'{path_thus_far}/{d}'):
+      # print(f'Creating {path_thus_far}/{d}')
+      os.mkdir(f'{path_thus_far}/{d}')
+    path_thus_far += f'/{d}'

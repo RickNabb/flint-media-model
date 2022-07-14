@@ -136,8 +136,10 @@ to create-agents
 end
 
 to create-citizen-dist [ id ]
-  let prior-vals (map sample-attr-dist citizen-priors)
-  let malleable-vals (map sample-attr-dist citizen-malleables)
+  let prior-vals []
+  let malleable-vals []
+;  let prior-vals (map sample-attr-dist citizen-priors)
+;  let malleable-vals (map sample-attr-dist citizen-malleables)
   create-citizen id prior-vals malleable-vals
 end
 
@@ -160,8 +162,10 @@ to create-flint-citizens
   foreach community [ cit-id ->
     ask citizen cit-id [
       set is-flint? true
-      let prior-vals (map sample-attr-dist citizen-priors)
-      let malleable-vals (map sample-attr-dist citizen-malleables)
+      let prior-vals (item 0 (normal-dist-multiple (belief-resolution - 1) 3 1 1 (length citizen-priors)))
+;      let prior-vals (map sample-attr-dist citizen-priors)
+;      let malleable-vals (map sample-attr-dist citizen-malleables)
+      let malleable-vals (item 0 (normal-dist-multiple (belief-resolution - 1) 3 1 1 (length citizen-malleables)))
       set brain create-agent-brain cit-id citizen-priors citizen-malleables prior-vals malleable-vals
     ]
   ]
@@ -509,10 +513,11 @@ to receive-message [ cit sender message message-id ]
           ; Return [-1 -1] if both are not already present
           let beliefs-from-message (map [ attr -> (list attr (dict-value b attr)) ] (map [ bel -> item 0 bel ] message))
           let non-empty-message filter [ bel -> (dict-value beliefs-from-message (item 0 bel)) != -1 ] message
-          if not empty? non-empty-message [
+          ifelse not empty? non-empty-message [
             ask out-link-neighbors [
               receive-message self cit non-empty-message message-id
             ]
+          ] [
             set num-agents-adopted num-agents-adopted + 1
           ]
         ]
@@ -533,10 +538,11 @@ to receive-message [ cit sender message message-id ]
           ; Return [-1 -1] if both are not already present
           let beliefs-from-message (map [ attr -> (list attr (dict-value b attr)) ] (map [ bel -> item 0 bel ] message))
           let non-empty-message filter [ bel -> (dict-value beliefs-from-message (item 0 bel)) != -1 ] message
-          if not empty? non-empty-message [
+          ifelse not empty? non-empty-message [
             ask out-link-neighbors [
               receive-message self cit non-empty-message message-id
             ]
+          ] [
             set num-agents-adopted num-agents-adopted + 1
           ]
         ]
@@ -565,10 +571,11 @@ to receive-message [ cit sender message message-id ]
           ; Return [-1 -1] if both are not already present
           let beliefs-from-message (map [ attr -> (list attr (dict-value b attr)) ] (map [ bel -> item 0 bel ] message))
           let non-empty-message filter [ bel -> (dict-value beliefs-from-message (item 0 bel)) != -1 ] message
-          if not empty? non-empty-message [
+          ifelse not empty? non-empty-message [
             ask out-link-neighbors [
               receive-message self cit non-empty-message message-id
             ]
+          ] [
             set num-agents-adopted num-agents-adopted + 1
           ]
         ]
@@ -787,6 +794,19 @@ end
 
 ;; NOTE: For procedures that simply report back what comes from a python function, please refer
 ;; to the python function itself for function details.
+
+;; Return a series of samples drawn from a normal distribution from [0, maxx]
+;; with mean mu, std sigma; where each of en samples has k entries.
+;; @param maxx - The maximum to draw from.
+;; @param mu - The mean of the distribution.
+;; @param sigma - The std deviation of the distribution.
+;; @param en - The number of k entry samples to draw.
+;; @param k - The number of entries per n sample.
+to-report normal-dist-multiple [ maxx mu sigma en k ]
+  report py:runresult(
+    word "normal_dist_multiple(" maxx "," mu "," sigma "," en "," k ")"
+  )
+end
 
 to-report sample-attr-dist [ attr ]
   report py:runresult(
@@ -1585,7 +1605,7 @@ CHOOSER
 spread-type
 spread-type
 "simple" "complex" "cognitive"
-2
+0
 
 TEXTBOX
 302
@@ -1666,7 +1686,7 @@ simple-spread-chance
 simple-spread-chance
 0
 1
-0.25
+0.5
 0.01
 1
 NIL
@@ -1718,7 +1738,7 @@ INPUTBOX
 526
 239
 sim-output-dir
-D:/school/grad-school/Tufts/research/cognitive-contagion/simulation-data/
+D:/school/grad-school/Tufts/research/flint-media-model/simulation-data/
 1
 0
 String
@@ -1834,7 +1854,7 @@ cognitive-translate
 cognitive-translate
 -10
 20
-11.0
+2.0
 1
 1
 NIL
@@ -2006,7 +2026,7 @@ citizen-citizen-influence
 citizen-citizen-influence
 0
 1
-0.07
+0.5
 0.01
 1
 NIL
@@ -2021,7 +2041,7 @@ citizen-media-influence
 citizen-media-influence
 0
 1
-0.05
+0.5
 0.01
 1
 NIL
@@ -2108,7 +2128,7 @@ PLOT
 324
 1110
 583
-Num agents adopted new belief
+num-new-beliefs
 NIL
 NIL
 0.0
@@ -2660,21 +2680,18 @@ export-plot "percent-agent-beliefs" (word contagion-dir "/" rand "_percent-agent
       <value value="&quot;barabasi-albert&quot;"/>
     </enumeratedValueSet>
   </experiment>
-  <experiment name="graph-exp" repetitions="10" sequentialRunOrder="false" runMetricsEveryStep="false">
+  <experiment name="belief-spread-exp" repetitions="10" sequentialRunOrder="false" runMetricsEveryStep="false">
     <setup>setup
 set-cognitive-contagion-params
 let run-dir (word sim-output-dir substring date-time-safe 11 (length date-time-safe) "-" belief-resolution)
-set contagion-dir (word run-dir "/" brain-type "/" spread-type "/" message-file "/" cognitive-fn "/" graph-type)
-py:run (word "if not os.path.isdir('" run-dir "'): os.mkdir('" run-dir "')")
-py:run (word "if not os.path.isdir('" run-dir "/" brain-type "'): os.mkdir('" run-dir "/" brain-type "')")
-py:run (word "if not os.path.isdir('" run-dir "/" brain-type  "/" spread-type "'): os.mkdir('" run-dir "/" brain-type "/" spread-type "')")
-py:run (word "if not os.path.isdir('" run-dir "/" brain-type  "/" spread-type "/" message-file "'): os.mkdir('" run-dir "/" brain-type "/" spread-type "/" message-file "')")
-py:run (word "if not os.path.isdir('" run-dir "/" brain-type  "/" spread-type "/" message-file "/" cognitive-fn "'): os.mkdir('" run-dir "/" brain-type "/" spread-type "/" message-file "/" cognitive-fn "')")
-py:run (word "if not os.path.isdir('" contagion-dir "'): os.mkdir('" contagion-dir "')")</setup>
+set contagion-dir (word run-dir "/" simple-spread-chance "/" ba-m "/" citizen-media-influence "/" citizen-citizen-influence)
+py:run (word "create_nested_dirs('" contagion-dir "')")</setup>
     <go>go</go>
     <final>let rand random 10000
 export-world (word contagion-dir "/" rand "_world.csv")
-export-plot "percent-agent-beliefs" (word contagion-dir "/" rand "_percent-agent-beliefs.csv")</final>
+export-plot "percent-agent-beliefs" (word contagion-dir "/" rand "_percent-agent-beliefs.csv")
+export-plot "num-new-beliefs" (word contagion-dir "/" rand "_new-beliefs.csv")</final>
+    <exitCondition>(count citizens with [ dict-value brain "A" != -1 ]) &gt;= (0.9 * N)</exitCondition>
     <metric>count citizens</metric>
     <enumeratedValueSet variable="contagion-on?">
       <value value="true"/>
@@ -2718,16 +2735,12 @@ export-plot "percent-agent-beliefs" (word contagion-dir "/" rand "_percent-agent
     </enumeratedValueSet>
     <enumeratedValueSet variable="citizen-media-influence">
       <value value="0.01"/>
-      <value value="0.05"/>
       <value value="0.1"/>
-      <value value="0.25"/>
       <value value="0.5"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="citizen-citizen-influence">
       <value value="0.01"/>
-      <value value="0.05"/>
       <value value="0.1"/>
-      <value value="0.25"/>
       <value value="0.5"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="flint-community-size">
