@@ -174,11 +174,7 @@ end
 to create-citizenz
   let id 0
   let en 0
-  ifelse graph-type != "kronecker" [
-    set en N
-  ] [
-    set en array_shape kronecker-seed ^ kronecker-k
-  ]
+  set en N
   repeat en [
     create-citizen-dist id
     set id id + 1
@@ -242,9 +238,6 @@ to connect-agents
       set i i + 1
     ]
 ;    show [sort (list (dict-value brain "ID") (dict-value brain "A"))] of citizens
-  ]
-  if graph-type = "kronecker" [
-    set G kronecker kronecker-seed kronecker-k
   ]
 
   ; Create links
@@ -362,6 +355,10 @@ to set-cognitive-contagion-params
   ]
 end
 
+to set-cit-media-over-time
+  set citizen-media-influence (cit-media-gradual-scalar * ((ticks + 1) / tick-end))
+end
+
 ;; Calculate the distances between the brain of cit and its neighbors.
 ;;
 ;; @param cit - The citizen to calculate the distance for.
@@ -408,6 +405,7 @@ to step
   if (ticks mod 5) = 0 [
     set num-agents-adopted 0
   ]
+  if cit-media-gradual? [ set-cit-media-over-time ]
   if contagion-on? [
     ;; In the case where we do not have influencer agents, simply do a contagion from the agent perspective
     ask turtles with [ not is-agent-brain-empty? self ] [
@@ -460,7 +458,13 @@ end
 to-report agent-type-influence [ p sender receiver ]
   if is-citizen? sender and is-citizen? receiver [ set p p * citizen-citizen-influence ]
   if is-media? sender and is-citizen? receiver [ set p p * media-citizen-influence ]
-  if is-citizen? sender and is-media? receiver [ set p p * citizen-media-influence ]
+  if is-citizen? sender and is-media? receiver [
+    ifelse dynamic-cit-media-influence? [
+      set p p * (([ length sort social-friend-neighbors ] of sender) / (max [ length sort social-friend-neighbors ] of citizens))
+    ] [
+      set p p * citizen-media-influence
+    ]
+  ]
   report p
 end
 
@@ -1726,7 +1730,7 @@ tick-end
 tick-end
 30
 1000
-1000.0
+500.0
 1
 1
 NIL
@@ -1744,10 +1748,10 @@ D:/school/grad-school/Tufts/research/flint-media-model/simulation-data/
 String
 
 PLOT
-732
-24
-1106
-312
+790
+15
+1164
+303
 percent-agent-beliefs
 Steps
 % of Agents
@@ -1964,8 +1968,8 @@ SLIDER
 ba-m
 ba-m
 0
-20
-10.0
+50
+25.0
 1
 1
 NIL
@@ -2041,7 +2045,7 @@ citizen-media-influence
 citizen-media-influence
 0
 1
-0.5
+0.714
 0.01
 1
 NIL
@@ -2072,42 +2076,6 @@ Link weight settings
 0.0
 1
 
-INPUTBOX
-257
-489
-400
-574
-kronecker-seed
-[[0.6,0.16,0.24],\n  [0.40,0.2,0.4],\n  [0.21,0.14,0.65]]
-1
-1
-String
-
-SLIDER
-256
-580
-428
-613
-kronecker-k
-kronecker-k
-0
-10
-5.0
-1
-1
-NIL
-HORIZONTAL
-
-TEXTBOX
-261
-467
-411
-485
-Kronecker
-11
-0.0
-1
-
 SLIDER
 530
 533
@@ -2124,10 +2092,10 @@ NIL
 HORIZONTAL
 
 PLOT
-733
-324
-1110
-583
+791
+315
+1168
+574
 num-new-beliefs
 NIL
 NIL
@@ -2140,6 +2108,43 @@ false
 "" ""
 PENS
 "default" 1.0 0 -16777216 true "" "plot num-agents-adopted"
+
+SWITCH
+546
+323
+761
+356
+dynamic-cit-media-influence?
+dynamic-cit-media-influence?
+1
+1
+-1000
+
+SWITCH
+541
+239
+698
+272
+cit-media-gradual?
+cit-media-gradual?
+0
+1
+-1000
+
+SLIDER
+539
+200
+721
+233
+cit-media-gradual-scalar
+cit-media-gradual-scalar
+1
+10
+1.0
+1
+1
+NIL
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
@@ -2488,108 +2493,6 @@ NetLogo 6.1.1
 @#$#@#$#@
 @#$#@#$#@
 <experiments>
-  <experiment name="simple-complex-experiment" repetitions="10" sequentialRunOrder="false" runMetricsEveryStep="false">
-    <setup>setup
-let run-dir (word sim-output-dir substring date-time-safe 11 (length date-time-safe))
-set contagion-dir (word run-dir "/" spread-type "/" message-file)
-py:run (word "if not os.path.isdir('" run-dir "'): os.mkdir('" run-dir "')")
-py:run (word "if not os.path.isdir('" run-dir "/" spread-type "'): os.mkdir('" run-dir "/" spread-type "')")
-py:run (word "if not os.path.isdir('" contagion-dir "'): os.mkdir('" contagion-dir "')")</setup>
-    <go>go</go>
-    <final>let rand random 10000
-export-world (word contagion-dir "/" rand "_world.csv")
-export-plot "percent-agent-beliefs" (word contagion-dir "/" rand "_percent-agent-beliefs.csv")</final>
-    <metric>count citizens</metric>
-    <enumeratedValueSet variable="spread-type">
-      <value value="&quot;simple&quot;"/>
-      <value value="&quot;complex&quot;"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="message-file">
-      <value value="&quot;default&quot;"/>
-      <value value="&quot;50-50&quot;"/>
-      <value value="&quot;gradual&quot;"/>
-    </enumeratedValueSet>
-  </experiment>
-  <experiment name="cognitive-exp" repetitions="10" sequentialRunOrder="false" runMetricsEveryStep="false">
-    <setup>setup
-set-cognitive-contagion-params
-let run-dir (word sim-output-dir substring date-time-safe 11 (length date-time-safe))
-set contagion-dir (word run-dir "/" spread-type "/" message-file "/" cognitive-fn)
-py:run (word "if not os.path.isdir('" run-dir "'): os.mkdir('" run-dir "')")
-py:run (word "if not os.path.isdir('" run-dir "/" spread-type "'): os.mkdir('" run-dir "/" spread-type "')")
-py:run (word "if not os.path.isdir('" run-dir "/" spread-type "/" message-file "'): os.mkdir('" run-dir "/" spread-type "/" message-file "')")
-py:run (word "if not os.path.isdir('" contagion-dir "'): os.mkdir('" contagion-dir "')")</setup>
-    <go>go</go>
-    <final>let rand random 10000
-export-world (word contagion-dir "/" rand "_world.csv")
-export-plot "percent-agent-beliefs" (word contagion-dir "/" rand "_percent-agent-beliefs.csv")</final>
-    <metric>count turtles</metric>
-    <enumeratedValueSet variable="cognitive-fn">
-      <value value="&quot;sigmoid-gullible&quot;"/>
-      <value value="&quot;sigmoid-mid&quot;"/>
-      <value value="&quot;sigmoid-stubborn&quot;"/>
-      <value value="&quot;linear-mid&quot;"/>
-      <value value="&quot;linear-gullible&quot;"/>
-      <value value="&quot;linear-stubborn&quot;"/>
-      <value value="&quot;threshold-mid&quot;"/>
-      <value value="&quot;threshold-gullible&quot;"/>
-      <value value="&quot;threshold-stubborn&quot;"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="message-file">
-      <value value="&quot;default&quot;"/>
-      <value value="&quot;50-50&quot;"/>
-      <value value="&quot;gradual&quot;"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="graph-type">
-      <value value="&quot;erdos-renyi&quot;"/>
-    </enumeratedValueSet>
-  </experiment>
-  <experiment name="graph-exp" repetitions="10" sequentialRunOrder="false" runMetricsEveryStep="false">
-    <setup>setup
-set-cognitive-contagion-params
-let run-dir (word sim-output-dir substring date-time-safe 11 (length date-time-safe) "-" belief-resolution)
-set contagion-dir (word run-dir "/" brain-type "/" spread-type "/" message-file "/" cognitive-fn "/" graph-type)
-py:run (word "if not os.path.isdir('" run-dir "'): os.mkdir('" run-dir "')")
-py:run (word "if not os.path.isdir('" run-dir "/" brain-type "'): os.mkdir('" run-dir "/" brain-type "')")
-py:run (word "if not os.path.isdir('" run-dir "/" brain-type  "/" spread-type "'): os.mkdir('" run-dir "/" brain-type "/" spread-type "')")
-py:run (word "if not os.path.isdir('" run-dir "/" brain-type  "/" spread-type "/" message-file "'): os.mkdir('" run-dir "/" brain-type "/" spread-type "/" message-file "')")
-py:run (word "if not os.path.isdir('" run-dir "/" brain-type  "/" spread-type "/" message-file "/" cognitive-fn "'): os.mkdir('" run-dir "/" brain-type "/" spread-type "/" message-file "/" cognitive-fn "')")
-py:run (word "if not os.path.isdir('" contagion-dir "'): os.mkdir('" contagion-dir "')")</setup>
-    <go>go</go>
-    <final>let rand random 10000
-export-world (word contagion-dir "/" rand "_world.csv")
-export-plot "percent-agent-beliefs" (word contagion-dir "/" rand "_percent-agent-beliefs.csv")</final>
-    <metric>count citizens</metric>
-    <enumeratedValueSet variable="belief-resolution">
-      <value value="32"/>
-      <value value="64"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="brain-type">
-      <value value="&quot;discrete&quot;"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="N">
-      <value value="500"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="cognitive-fn">
-      <value value="&quot;sigmoid-stubborn&quot;"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="spread-type">
-      <value value="&quot;simple&quot;"/>
-      <value value="&quot;complex&quot;"/>
-      <value value="&quot;cognitive&quot;"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="message-file">
-      <value value="&quot;default&quot;"/>
-      <value value="&quot;50-50&quot;"/>
-      <value value="&quot;gradual&quot;"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="graph-type">
-      <value value="&quot;erdos-renyi&quot;"/>
-      <value value="&quot;watts-strogatz&quot;"/>
-      <value value="&quot;barabasi-albert&quot;"/>
-      <value value="&quot;mag&quot;"/>
-    </enumeratedValueSet>
-  </experiment>
   <experiment name="influence-likelihood-paths" repetitions="100" runMetricsEveryStep="false">
     <setup>setup</setup>
     <go>show "wow"</go>
@@ -2608,79 +2511,7 @@ export-plot "percent-agent-beliefs" (word contagion-dir "/" rand "_percent-agent
       <value value="&quot;mag&quot;"/>
     </enumeratedValueSet>
   </experiment>
-  <experiment name="simple-parameter-analysis" repetitions="100" runMetricsEveryStep="false">
-    <setup>setup
-let run-dir (word sim-output-dir "/simple-param-analysis/" substring date-time-safe 11 (length date-time-safe) "-" belief-resolution)
-set contagion-dir (word run-dir "/" simple-spread-chance "/" brain-type "/" message-file "/" graph-type)
-py:run (word "if not os.path.isdir('" run-dir "'): os.mkdir('" run-dir "')")
-py:run (word "if not os.path.isdir('" run-dir "/" simple-spread-chance "'): os.mkdir('" run-dir "/" simple-spread-chance "')")
-py:run (word "if not os.path.isdir('" run-dir "/" simple-spread-chance "/" brain-type "'): os.mkdir('" run-dir "/" simple-spread-chance "/" brain-type "')")
-py:run (word "if not os.path.isdir('" run-dir "/" simple-spread-chance "/" brain-type "/" message-file "'): os.mkdir('" run-dir "/" simple-spread-chance "/" brain-type "/" message-file "')")
-py:run (word "if not os.path.isdir('" contagion-dir "'): os.mkdir('" contagion-dir "')")</setup>
-    <go>go</go>
-    <final>let rand random 10000
-export-world (word contagion-dir "/" rand "_world.csv")
-export-plot "percent-agent-beliefs" (word contagion-dir "/" rand "_percent-agent-beliefs_" simple-spread-chance ".csv")</final>
-    <metric>count turtles</metric>
-    <steppedValueSet variable="simple-spread-chance" first="0.05" step="0.05" last="0.95"/>
-    <enumeratedValueSet variable="belief-resolution">
-      <value value="7"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="brain-type">
-      <value value="&quot;discrete&quot;"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="N">
-      <value value="500"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="spread-type">
-      <value value="&quot;simple&quot;"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="message-file">
-      <value value="&quot;default&quot;"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="graph-type">
-      <value value="&quot;erdos-renyi&quot;"/>
-      <value value="&quot;watts-strogatz&quot;"/>
-      <value value="&quot;barabasi-albert&quot;"/>
-    </enumeratedValueSet>
-  </experiment>
-  <experiment name="complex-parameter-analysis" repetitions="100" runMetricsEveryStep="false">
-    <setup>setup
-let run-dir (word sim-output-dir "/complex-param-analysis/" substring date-time-safe 11 (length date-time-safe) "-" belief-resolution)
-set contagion-dir (word run-dir "/" complex-spread-ratio "/" brain-type "/" message-file "/" graph-type)
-py:run (word "if not os.path.isdir('" run-dir "'): os.mkdir('" run-dir "')")
-py:run (word "if not os.path.isdir('" run-dir "/" complex-spread-ratio "'): os.mkdir('" run-dir "/" complex-spread-ratio "')")
-py:run (word "if not os.path.isdir('" run-dir "/" complex-spread-ratio "/" brain-type "'): os.mkdir('" run-dir "/" complex-spread-ratio "/" brain-type "')")
-py:run (word "if not os.path.isdir('" run-dir "/" complex-spread-ratio "/" brain-type "/" message-file "'): os.mkdir('" run-dir "/" complex-spread-ratio "/" brain-type "/" message-file "')")
-py:run (word "if not os.path.isdir('" contagion-dir "'): os.mkdir('" contagion-dir "')")</setup>
-    <go>go</go>
-    <final>let rand random 10000
-export-world (word contagion-dir "/" rand "_world.csv")
-export-plot "percent-agent-beliefs" (word contagion-dir "/" rand "_percent-agent-beliefs_" complex-spread-ratio ".csv")</final>
-    <metric>count turtles</metric>
-    <steppedValueSet variable="complex-spread-ratio" first="0.05" step="0.05" last="0.95"/>
-    <enumeratedValueSet variable="belief-resolution">
-      <value value="7"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="brain-type">
-      <value value="&quot;discrete&quot;"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="N">
-      <value value="500"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="spread-type">
-      <value value="&quot;complex&quot;"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="message-file">
-      <value value="&quot;gradual&quot;"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="graph-type">
-      <value value="&quot;erdos-renyi&quot;"/>
-      <value value="&quot;watts-strogatz&quot;"/>
-      <value value="&quot;barabasi-albert&quot;"/>
-    </enumeratedValueSet>
-  </experiment>
-  <experiment name="belief-spread-exp" repetitions="10" sequentialRunOrder="false" runMetricsEveryStep="false">
+  <experiment name="belief-spread-exp" repetitions="30" sequentialRunOrder="false" runMetricsEveryStep="false">
     <setup>setup
 set-cognitive-contagion-params
 let run-dir (word sim-output-dir substring date-time-safe 11 (length date-time-safe) "-" belief-resolution)
@@ -2691,7 +2522,6 @@ py:run (word "create_nested_dirs('" contagion-dir "')")</setup>
 export-world (word contagion-dir "/" rand "_world.csv")
 export-plot "percent-agent-beliefs" (word contagion-dir "/" rand "_percent-agent-beliefs.csv")
 export-plot "num-new-beliefs" (word contagion-dir "/" rand "_new-beliefs.csv")</final>
-    <exitCondition>(count citizens with [ dict-value brain "A" != -1 ]) &gt;= (0.9 * N)</exitCondition>
     <metric>count citizens</metric>
     <enumeratedValueSet variable="contagion-on?">
       <value value="true"/>
@@ -2712,13 +2542,12 @@ export-plot "num-new-beliefs" (word contagion-dir "/" rand "_new-beliefs.csv")</
       <value value="1000"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="tick-end">
-      <value value="1000"/>
+      <value value="500"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="spread-type">
       <value value="&quot;simple&quot;"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="simple-spread-chance">
-      <value value="0.1"/>
       <value value="0.25"/>
       <value value="0.5"/>
     </enumeratedValueSet>
@@ -2739,7 +2568,264 @@ export-plot "num-new-beliefs" (word contagion-dir "/" rand "_new-beliefs.csv")</
       <value value="0.5"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="citizen-citizen-influence">
-      <value value="0.01"/>
+      <value value="0.1"/>
+      <value value="0.5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="flint-community-size">
+      <value value="0.005"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="low-trust-connectivity-test" repetitions="30" sequentialRunOrder="false" runMetricsEveryStep="false">
+    <setup>setup
+set-cognitive-contagion-params
+let run-dir (word sim-output-dir substring date-time-safe 11 (length date-time-safe) "-low-trust-connectivity")
+set contagion-dir (word run-dir "/" ba-m)
+py:run (word "create_nested_dirs('" contagion-dir "')")</setup>
+    <go>go</go>
+    <final>let rand random 10000
+export-world (word contagion-dir "/" rand "_world.csv")
+export-plot "percent-agent-beliefs" (word contagion-dir "/" rand "_percent-agent-beliefs.csv")
+export-plot "num-new-beliefs" (word contagion-dir "/" rand "_new-beliefs.csv")</final>
+    <metric>count citizens</metric>
+    <enumeratedValueSet variable="contagion-on?">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="load-graph?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="media-agents?">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="belief-resolution">
+      <value value="7"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="brain-type">
+      <value value="&quot;discrete&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="N">
+      <value value="1000"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="tick-end">
+      <value value="500"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="spread-type">
+      <value value="&quot;simple&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="simple-spread-chance">
+      <value value="0.5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="graph-type">
+      <value value="&quot;barabasi-albert&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="ba-m">
+      <value value="3"/>
+      <value value="10"/>
+      <value value="25"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="epsilon">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="citizen-media-influence">
+      <value value="0.1"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="citizen-citizen-influence">
+      <value value="0.1"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="flint-community-size">
+      <value value="0.005"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="high-trust-connectivity-test" repetitions="30" sequentialRunOrder="false" runMetricsEveryStep="false">
+    <setup>setup
+set-cognitive-contagion-params
+let run-dir (word sim-output-dir substring date-time-safe 11 (length date-time-safe) "-high-trust-connectivity")
+set contagion-dir (word run-dir "/" ba-m)
+py:run (word "create_nested_dirs('" contagion-dir "')")</setup>
+    <go>go</go>
+    <final>let rand random 10000
+export-world (word contagion-dir "/" rand "_world.csv")
+export-plot "percent-agent-beliefs" (word contagion-dir "/" rand "_percent-agent-beliefs.csv")
+export-plot "num-new-beliefs" (word contagion-dir "/" rand "_new-beliefs.csv")</final>
+    <metric>count citizens</metric>
+    <enumeratedValueSet variable="contagion-on?">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="load-graph?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="media-agents?">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="belief-resolution">
+      <value value="7"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="brain-type">
+      <value value="&quot;discrete&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="N">
+      <value value="1000"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="tick-end">
+      <value value="500"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="spread-type">
+      <value value="&quot;simple&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="simple-spread-chance">
+      <value value="0.5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="graph-type">
+      <value value="&quot;barabasi-albert&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="ba-m">
+      <value value="3"/>
+      <value value="10"/>
+      <value value="25"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="epsilon">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="citizen-media-influence">
+      <value value="0.5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="citizen-citizen-influence">
+      <value value="0.5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="flint-community-size">
+      <value value="0.005"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="belief-spread-exp-dynamic-cit-media" repetitions="30" sequentialRunOrder="false" runMetricsEveryStep="false">
+    <setup>setup
+set-cognitive-contagion-params
+let run-dir (word sim-output-dir substring date-time-safe 11 (length date-time-safe) "-belief-spread-dynamic-exp")
+set contagion-dir (word run-dir "/" simple-spread-chance "/" ba-m "/" citizen-citizen-influence)
+py:run (word "create_nested_dirs('" contagion-dir "')")</setup>
+    <go>go</go>
+    <final>let rand random 10000
+export-world (word contagion-dir "/" rand "_world.csv")
+export-plot "percent-agent-beliefs" (word contagion-dir "/" rand "_percent-agent-beliefs.csv")
+export-plot "num-new-beliefs" (word contagion-dir "/" rand "_new-beliefs.csv")</final>
+    <metric>count citizens</metric>
+    <enumeratedValueSet variable="contagion-on?">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="load-graph?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="media-agents?">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="belief-resolution">
+      <value value="7"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="brain-type">
+      <value value="&quot;discrete&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="N">
+      <value value="1000"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="tick-end">
+      <value value="500"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="spread-type">
+      <value value="&quot;simple&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="simple-spread-chance">
+      <value value="0.1"/>
+      <value value="0.5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="graph-type">
+      <value value="&quot;barabasi-albert&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="ba-m">
+      <value value="3"/>
+      <value value="10"/>
+      <value value="25"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="epsilon">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="citizen-media-influence">
+      <value value="0.5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="dynamic-cit-media-influence?">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="citizen-citizen-influence">
+      <value value="0.1"/>
+      <value value="0.5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="flint-community-size">
+      <value value="0.005"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="gradual-trust-connectivity-test" repetitions="30" sequentialRunOrder="false" runMetricsEveryStep="false">
+    <setup>setup
+set-cognitive-contagion-params
+let run-dir (word sim-output-dir substring date-time-safe 11 (length date-time-safe) "-gradual-trust-connectivity")
+set contagion-dir (word run-dir "/" simple-spread-chance "/" ba-m "/" cit-media-gradual-scalar "/" citizen-citizen-influence)
+py:run (word "create_nested_dirs('" contagion-dir "')")</setup>
+    <go>go</go>
+    <final>let rand random 10000
+export-world (word contagion-dir "/" rand "_world.csv")
+export-plot "percent-agent-beliefs" (word contagion-dir "/" rand "_percent-agent-beliefs.csv")
+export-plot "num-new-beliefs" (word contagion-dir "/" rand "_new-beliefs.csv")</final>
+    <metric>count citizens</metric>
+    <enumeratedValueSet variable="contagion-on?">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="load-graph?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="media-agents?">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="belief-resolution">
+      <value value="7"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="brain-type">
+      <value value="&quot;discrete&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="N">
+      <value value="1000"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="tick-end">
+      <value value="500"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="spread-type">
+      <value value="&quot;simple&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="simple-spread-chance">
+      <value value="0.1"/>
+      <value value="0.5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="graph-type">
+      <value value="&quot;barabasi-albert&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="ba-m">
+      <value value="3"/>
+      <value value="10"/>
+      <value value="25"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="epsilon">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="citizen-media-influence">
+      <value value="0.1"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="dynamic-cit-media-influence?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="cit-media-gradual?">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="cit-media-gradual-scalar">
+      <value value="1"/>
+      <value value="2"/>
+      <value value="5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="citizen-citizen-influence">
       <value value="0.1"/>
       <value value="0.5"/>
     </enumeratedValueSet>
