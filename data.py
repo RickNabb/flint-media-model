@@ -1005,7 +1005,7 @@ def get_all_multidata(param_combos, plots, path):
       # print(plot_name, plot_types)
       (multi_data, props, model_params) = process_multi_chart_data(f'{path}/{"/".join(combo)}', plot_name)
       multi_datas[(combo,plot_name)] = multi_data
-  return multi_datas
+  return (multi_datas, props, model_params)
 
 def process_belief_spread_exp_results(path):
   simple_spread_chance = [ '0.1', '0.25', '0.5' ]
@@ -1018,3 +1018,104 @@ def process_belief_spread_exp_results(path):
     {'percent-agent-beliefs': [PLOT_TYPES.LINE, PLOT_TYPES.STACK],
     'new-beliefs': [PLOT_TYPES.LINE]},
     path)
+
+def belief_spread_exp_results_df(path):
+  '''
+  Process the results of the belief spread experiment into dataframes.
+  This will put each simulation trial into a data frame row with relevant
+  parameters set by the df_columns variable.
+
+  :path: The string path to the raw data files.
+  '''
+  simple_spread_chance = [ '0.1', '0.25', '0.5' ]
+  ba_m = ['3','10','25']
+  cit_media_influence = ['0.01','0.1','0.5']
+  cit_cit_influence = ['0.01','0.1','0.5']
+
+  measures = ['new-beliefs']
+  df_columns = { "new-beliefs": ['n','spread-type','simple-spread-chance','graph-type','ba-m','citizen-media-influence','citizen-citizen-influence','flint-community-size'] }
+  multidata_key_params = ['simple-spread-chance','ba-m','citizen-media-influence','citizen-citizen-influence']
+
+  (multidata, props, params) = get_all_multidata(
+    [simple_spread_chance,ba_m,cit_media_influence,cit_cit_influence],
+    {'new-beliefs': [PLOT_TYPES.LINE]},
+    path)
+  return multidata_to_dataframes(measures, df_columns, multidata, multidata_key_params, props, params)
+
+def process_trust_connectivity_exp_results_data(path):
+  ba_m = ['3','10','25']
+
+  process_exp_outputs(
+    [ba_m],
+    {'percent-agent-beliefs': [PLOT_TYPES.LINE, PLOT_TYPES.STACK],
+    'new-beliefs': [PLOT_TYPES.LINE]},
+    path)
+
+def trust_connectivity_exp_results_df(path):
+  ba_m = ['3','10','25']
+
+  measures = ['new-beliefs']
+  df_columns = { "new-beliefs": ['n','spread-type','simple-spread-chance','graph-type','ba-m','citizen-media-influence','citizen-citizen-influence','flint-community-size'] }
+  multidata_key_params = ['ba-m']
+
+  (multidata, props, params) = get_all_multidata(
+    [ba_m],
+    {'percent-agent-beliefs': [PLOT_TYPES.LINE, PLOT_TYPES.STACK],
+    'new-beliefs': [PLOT_TYPES.LINE]},
+    path)
+  return multidata_to_dataframes(measures, df_columns, multidata, multidata_key_params, props, params)
+
+def process_trust_connectivity_exp_results(path):
+  ba_m = ['3','10','25']
+
+  process_exp_outputs(
+    [ba_m],
+    {'percent-agent-beliefs': [PLOT_TYPES.LINE, PLOT_TYPES.STACK],
+    'new-beliefs': [PLOT_TYPES.LINE]},
+    path)
+
+def process_belief_spread_dynamic_results(path):
+  simple_spread_chance = [ '0.1', '0.5' ]
+  ba_m = ['3','10','25']
+  cit_cit_influence = ['0.1','0.5']
+
+  process_exp_outputs(
+    [simple_spread_chance,ba_m,cit_cit_influence],
+    {'percent-agent-beliefs': [PLOT_TYPES.LINE, PLOT_TYPES.STACK],
+    'new-beliefs': [PLOT_TYPES.LINE]},
+    path)
+
+
+def multidata_to_dataframes(measures, df_columns, multidata, multidata_key_params, props, params):
+  '''
+  Convert experiment multidata into a usable dataframe format. This
+  returns a dictionary of dataframes keyed by measure name (the name
+  of the graph used to output results in NetLogo).
+
+  :param measures: A list of NetLogo graph outputs to collect data for.
+  Each of these will yield a separate dataframe.
+  :param df_columns: A dictionary of column title arrays keyed by
+  the measure they should be for (e.g. {'new-beliefs': ['N','ba-m',...]})
+  :param multidata: A collection of multidata for a given experiment.
+  :param multidata_key_params: A list (in order) of parameters that were
+  varied during the experiment, and are used as keys for the multidata.
+  :param props:
+  :param params: Simulation parameters for the experiment.
+  '''
+
+  dfs = { measure: pd.DataFrame(columns=df_columns[measure]+['data']) for measure in measures }
+
+  for measure in measures:
+    data = { key: value for (key,value) in multidata.items() if key[1] == measure }
+    df = dfs[measure]
+
+    for (param_measure_combo, data_points) in data.items():
+      param_combo = param_measure_combo[0]
+      # TODO: Maybe this should be generalized somehow to incorporate
+      # different pen names?
+      data_points = data_points['default']
+      for data_point in data_points:
+        data_row = [ param_combo[multidata_key_params.index(col)] if col in multidata_key_params else params[col] for col in df_columns[measure] ]
+        df.loc[len(df.index)] = data_row + [data_point]
+  
+  return dfs
