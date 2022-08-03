@@ -1,19 +1,16 @@
-from email import message
-from enum import Enum
-from random import *
-from utils import *
-from statistics import mean, variance, mode
-from copy import deepcopy
-from plotting import *
-from nlogo_colors import *
-import itertools
+import csv
 import pandas as pd
-import os
-import numpy as np
-from scipy.stats import chi2_contingency, truncnorm
-from sklearn.linear_model import LinearRegression
-import math
-import matplotlib.pyplot as plt
 
 def createdataframe(dataset):
-    usersDf =  pd.read_csv('users.csv', sep='__'  , engine='python')
+    df =  pd.read_csv(dataset, sep='|' , engine='python')
+    df.columns = ['run', 'n', 'spread-type', 'simple-spread-chance', 'graph-type', 'ba-m', 'citizen-media-influence', 'citizen-citizen-influence', 'flint-community-size', 'data']
+    df.set_index('run', inplace=True)
+    return df
+    #to-do:
+    #use index as first value
+    #add column names
+def printdataframe(dataset):
+    x = createdataframe(dataset)
+    print(x)
+
+printdataframe('belief-spread-exp-results.csv')
