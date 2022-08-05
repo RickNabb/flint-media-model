@@ -3,7 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import re
-
+from scipy.signal import savgol_filter
 
 
 
@@ -52,7 +52,7 @@ def nlogo_mixed_list_to_dict_rec(list_str):
         d[list(parsed.keys())[0]] = list(parsed.values())[0]
         chunk = ''
       # chunks[stack_count] += char
-  print(d)
+  #print(d)
   return d
 
 def nlogo_parse_chunk(chunk):
@@ -75,20 +75,26 @@ def nlogo_parse_chunk(chunk):
 
 def createdataframe(dataset):
     df =  pd.read_csv(dataset, sep='|' , engine='python')
+    #print(df)
     df.columns = ['run', 'n', 'spread-type', 'simple-spread-chance', 'graph-type', 'ba-m', 'citizen-media-influence', 'citizen-citizen-influence', 'flint-community-size', 'data']
     df.set_index('run', inplace=True)
     return df
 
 def convertdata(data):
-    data.strip()
-    ndata = nlogo_parse_chunk(data)
+    print(data)
+    sdata = data.strip(' ')
+    #print('stripped data', sdata)
+    ndata = nlogo_parse_chunk(sdata)
+    #print(ndata)
     n2data = [elem.replace('.', '') for elem in ndata]
-    print(len(n2data))
+    #print(len(n2data))
     list=[]
     for x in n2data:
         list.append(x.replace("\r\n", ""))
-    print(list)
-    print(len(list))
+    #print(list)
+    list = [i for i in list if i]
+    #print(list)
+    #print(len(list))
     return list
 
 def convert_to_int(data):
@@ -96,24 +102,86 @@ def convert_to_int(data):
         data[i] = int(data[i])
     return data
 
+def apply_filter(int_data):
+    #newdata = savgol_filter(int_data, 15, 2)
+    newdata = savgol_filter(int_data, 15, 2)
+    return newdata
+    #could define spike as x% of population in x time steps or use filter and check peak
 
-def test_run_data(dataset):
+def loop_per_row(df):
+    df.insert(0, "class", " ")
+    for i in range(0,df.shape[0]):
+        run1 = df.iloc[i]
+        data = run1['data']
+        finallist = convertdata(data)
+        int_data = convert_to_int(finallist)
+        #print(int_data)
+        '''for full dataframe'''
+        class_of_peak = evaluate_peak(int_data)
+        df.at[i,'class'] = class_of_peak
+    return(df)
+
+        #ylength = len(int_data)
+        #USE TIME TO GRAPH
+        #time = []
+        #for i in range(1, ylength + 1):
+        #    timestep = i
+        #    time.append(timestep)
+    '''Code below is for filtered data'''
+    #filtered_int = apply_filter(int_data)
+    #return(filtered_int, time)
+    #evaluate_peak(filtered_int, time)
+    '''For non-filtered data, use below:'''
+        #class_of_peak = evaluate_peak(int_data)
+    # return(int_data, time)
+    '''To only return class for one trial'''
+        #return(class_of_peak)
+
+
+
+
+def evaluate_peak(data):
+    deltas=[]
+    for i in range(4, len(data)):
+        if (data[i] - data[i-5]) < 20:
+            class_of_peak = 1
+            deltas.append(class_of_peak)
+        elif (data[i] - data[i-5]) >= 20 and (data[i] - data[i-5]) < 40:
+            class_of_peak = 2
+            deltas.append(class_of_peak)
+        elif (data[i] - data[i - 5]) >= 40 and (data[i] - data[i - 5]) < 60:
+            class_of_peak = 3
+            deltas.append(class_of_peak)
+        elif (data[i] - data[i - 5]) >= 60 and (data[i] - data[i - 5]) < 100:
+            class_of_peak = 4
+            deltas.append(class_of_peak)
+        #elif (data[i] - data[i - 5]) >= 100 :
+        else:
+            class_of_peak = 5
+            deltas.append(class_of_peak)
+    class_of_peak=max(deltas)
+    return(class_of_peak)
+
+
+
+
+def main(dataset):
     df = createdataframe(dataset)
-    run1=df.iloc[120]
-    data=run1['data']
-    print(data)
-    finallist = convertdata(data)
-    int_data = convert_to_int(finallist)
-    print(int_data)
-    ylength= len(int_data)
-    ylist=[]
-    for i in range(1,ylength + 1):
-        timestep = i
-        ylist.append(timestep)
-    print(ylength)
-    print(ylist)
-    print(type(finallist))
-    #plt.plot(finalist, ylist)
+    #filtered_int, time = loop_per_row(df)
+    #print(filtered_int, time)
+    #int_data, time = loop_per_row(df)
+    #print(int_data, time)
+
+    '''tO GET CLASSES, USE CODE BELOW:'''
+    #THIS WAS OLD INDIVIDUAL TEST
+    #class_of_peak=loop_per_row(df)
+    #print(class_of_peak)
+    df_with_class=loop_per_row(df)
+    print(df_with_class)
+
+
+    #plt.plot(time, int_data)
+    #plt.plot(time, filtered_int)
     #plt.show()
     #need to convert string to list of integers
 
@@ -124,7 +192,7 @@ def test_run_data(dataset):
 
 
 #my code
-test_run_data('belief-spread-exp-results.csv')
+main('belief-spread-exp-results.csv')
 
 
 #Nick's code
