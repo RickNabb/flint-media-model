@@ -4,7 +4,22 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import re
 from scipy.signal import savgol_filter
+import numpy as np
+import tslearn.clustering
+from sklearn.preprocessing import StandardScaler
+import sklearn
+from sklearn.datasets import make_blobs
+from sklearn.datasets import load_iris
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
+from sklearn import tree
+import graphviz
+import os
+from sklearn.decomposition import PCA
+os.environ["PATH"] += os.pathsep + 'C:/Users/cknox/anaconda3/envs/flintdata2/Library/bin/graphviz'
 
+from sklearn.metrics import silhouette_score
+from sklearn.preprocessing import StandardScaler
 
 
 
@@ -178,6 +193,7 @@ def main(dataset):
     #print(class_of_peak)
     df_with_class=loop_per_row(df)
     print(df_with_class)
+    decision_tree(df_with_class)
 
 
     #plt.plot(time, int_data)
@@ -194,18 +210,26 @@ def main(dataset):
 #my code
 main('belief-spread-exp-results.csv')
 
-
-#Nick's code
-    #get csv to string??
-
-def activate_nicks_code(csv):
-    df = pd.read_csv(csv, sep='|', engine='python')
-    df.columns = ['run', 'n', 'spread-type', 'simple-spread-chance', 'graph-type', 'ba-m', 'citizen-media-influence',
-                  'citizen-citizen-influence', 'flint-community-size', 'data']
-    df.set_index('run', inplace=True)
-    chunk = df['data']
-    array = nlogo_list_to_arr(chunk)
-    nlogo_mixed_list_to_dict(array)
+def decision_tree(df):
+    df = df.drop(columns=["data"])
+    y=df["class"]
+    y.to_numpy()
+    df = df.reset_index(drop=True)
+    water_feature_names= ['run', 'n', 'spread-type', 'simple-spread-chance', 'graph-type', 'ba-m', 'citizen-media-influence', 'citizen-citizen-influence', 'flint-community-size']
+    X=df.to_numpy()
+    class_names= ['1','2','3','4','5']
+    print(X)
+    print(y)
+    y.to_numpy()
+    clf = tree.DecisionTreeClassifier()
+    clf = clf.fit(X, y)
+    tree.plot_tree(clf)
+    dot_data = tree.export_graphviz(clf, out_file=None)
+    graph = graphviz.Source(dot_data)
+    graph.render("first test")
+    dot_data = tree.export_graphviz(clf, out_file=None, feature_names = water_feature_names, class_names = class_names, filled = True, rounded = True, special_characters = True)
+    graph = graphviz.Source(dot_data)
+    graph
 
 #activate_nicks_code('belief-spread-exp-results.csv')
 
