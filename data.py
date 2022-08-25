@@ -394,9 +394,18 @@ def process_multi_chart_data(in_path, in_filename='percent-agent-beliefs'):
       multi_data.append(data[2])
 
   means = { key: [] for key in multi_data[0].keys() }
+  vector_length = int(model_params['tick-end'])
   for data in multi_data:
     for key in data.keys():
       data_vector = np.array(data[key]['y']).astype('float32')
+      
+      # Ensuring length of vector is equal to num ticks so the
+      # vectors can stack on each other
+      if len(data_vector) < vector_length:
+        data_vector = np.append(data_vector, [ data_vector[-1] for i in range(vector_length - len(data_vector)) ])
+      elif len(data_vector) > vector_length:
+        data_vector = data_vector[:vector_length]
+
       if means[key] == []:
         means[key] = data_vector
       else:
@@ -1060,6 +1069,23 @@ def trust_connectivity_exp_results_df(path):
 
   (multidata, props, params) = get_all_multidata(
     [ba_m],
+    {'percent-agent-beliefs': [PLOT_TYPES.LINE, PLOT_TYPES.STACK],
+    'new-beliefs': [PLOT_TYPES.LINE]},
+    path)
+  return multidata_to_dataframes(measures, df_columns, multidata, multidata_key_params, props, params)
+
+def gradual_trust_connectivity_exp_results_df(path):
+  ba_m = ['3','10','25']
+  simple_spread_chance = [ '0.1', '0.5' ]
+  cit_cit_influence = ['0.1','0.5']
+  cit_media_gradual_scalar = ['1','2', '5']
+
+  measures = ['new-beliefs']
+  df_columns = { "new-beliefs": ['n','spread-type','simple-spread-chance','graph-type','ba-m','citizen-media-influence','citizen-citizen-influence','citizen-media-gradual-scalar','flint-community-size'] }
+  multidata_key_params = ['simple-spread-chance','ba-m','citizen-media-gradual-scalar','citizen-citizen-influence']
+
+  (multidata, props, params) = get_all_multidata(
+    [simple_spread_chance, ba_m, cit_media_gradual_scalar, cit_cit_influence],
     {'percent-agent-beliefs': [PLOT_TYPES.LINE, PLOT_TYPES.STACK],
     'new-beliefs': [PLOT_TYPES.LINE]},
     path)
