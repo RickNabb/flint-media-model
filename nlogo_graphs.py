@@ -225,6 +225,24 @@ def nlogo_graph_to_nx(citizens, friend_links):
     G.add_edge(int(end1), int(end2))
   return G
 
+def nlogo_graph_to_nx_with_media(citizens, friend_links, media, subscribers):
+  G = nx.Graph()
+  agents = citizens + media
+  links = friend_links + subscribers
+  for agent in agents:
+    cit_id = int(agent['ID'])
+    G.add_node(cit_id)
+    for attr in agent['malleable']:
+      G.nodes[cit_id][attr] = agent[attr]
+    for attr in agent['prior']:
+      G.nodes[cit_id][attr] = agent[attr]
+  for link in links:
+    link_split = link.split(' ')
+    end1 = link_split[1]
+    end2 = link_split[2].replace(')','')
+    G.add_edge(int(end1), int(end2))
+  return G
+
 def influencer_paths(G, subscribers, target):
   target_id = int(target.split(' ')[1].replace(')', ''))
   return { subscriber.split(' ')[2].replace(')',''): nx.all_simple_paths(G, subscriber.split(' ')[2].replace(')',''), target, cutoff=5) for subscriber in subscribers }
@@ -326,3 +344,32 @@ def nlogo_communities_by_level(citizens, social_friends):
   dendrogram = community_louvain.generate_dendrogram(G)
   levels = len(dendrogram)
   return [ community_louvain.partition_at_level(dendrogram, level) for level in range(levels) ]
+
+def graph_homophily(G):
+  '''
+  Takes a measure of homophily in the graph based on first-level neighbor
+  distance on a given node attribute. Details can be found in Rabb et al. 2022
+  Eq (9).
+
+  :param G: The networkx graph to take the measure on.
+  '''
+  distances = []
+  attrs = np.array([ list(G.nodes[node].values()) for node in G.nodes ])
+  adj = nx.adj_matrix(G)
+  for node in G.nodes:
+    norm_vector = np.array([ np.linalg.norm(attr - attrs[node]) for attr in attrs ])
+    # Note: adj[node] * norm_vector sums the values already
+    distances.append((adj[node] * norm_vector)[0] / adj[node].sum())
+  return (np.array(distances).mean(), np.array(distances).var())
+
+def node_degree_centrality(G, node):
+  '''
+  Get the degree centrality for a single node in G.
+
+  :param G: The graph.
+  :param node: The integer node index to get.
+  '''
+  return nx.degree_centrality(G)[node]
+
+def nodes_degree_centrality(G, nodes):
+  return sum([ node_degree_centrality(G, node) for node in nodes ])

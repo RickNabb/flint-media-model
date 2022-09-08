@@ -406,6 +406,9 @@ to step
     set num-agents-adopted 0
   ]
   if cit-media-gradual? [ set-cit-media-over-time ]
+  if flint-organizing? [
+    ask citizens with [is-flint?] [ organize self ]
+  ]
   if contagion-on? [
     ;; In the case where we do not have influencer agents, simply do a contagion from the agent perspective
     ask turtles with [ not is-agent-brain-empty? self ] [
@@ -454,6 +457,43 @@ end
 ;    set cur-message-id (cur-message-id + 1)
 ;  ]
 ;end
+
+to organize [ cit ]
+  let max-media-subscriber-count max [ count subscribers ] of medias
+  let max-social-neighbor-count max [ count social-friend-neighbors ] of citizens
+  let num-cit-neighbors [ count out-link-neighbors ] of cit
+
+  if flint-organizing-strategy = "neighbors-of-neighbors" [
+    let neighbor-neighbors [ sort social-friend-neighbors ] of [ social-friend-neighbors ] of cit
+    let neighbor-neighbors-merged []
+    foreach neighbor-neighbors [ neighbor-set ->
+      foreach neighbor-set [ neighbor -> set neighbor-neighbors-merged (lput neighbor neighbor-neighbors-merged) ]
+    ]
+    set neighbor-neighbors-merged remove-duplicates neighbor-neighbors-merged
+    ;; TODO: Merge these lists and de-duplicate, THEN pick 5 of them to ask (n-of size agentset)
+
+    foreach n-of 5 neighbor-neighbors-merged [ neighbor ->
+      ask neighbor [
+        if cit != self [
+          let num-neighbors count out-link-neighbors
+          let connect-prob (num-cit-neighbors / (num-cit-neighbors + num-neighbors)) * citizen-citizen-influence
+          let roll random-float 1
+          let neighbor-neighbor self
+          if roll <= connect-prob [
+            create-social-friend-to cit
+            ask cit [ create-social-friend-to neighbor-neighbor ]
+          ]
+        ]
+      ]
+    ]
+  ]
+  if flint-organizing-strategy = "high-degree-media" [
+
+  ]
+  if flint-organizing-strategy = "high-degree-citizens" [
+
+  ]
+end
 
 to-report agent-type-influence [ p sender receiver ]
   if is-citizen? sender and is-citizen? receiver [ set p p * citizen-citizen-influence ]
@@ -1015,6 +1055,26 @@ end
 
 to-report community-sizes-by-level [ comm ]
   report map [ level -> max (map [ cit-comm-pair -> item 1 cit-comm-pair ] level) ] comm
+end
+
+;;
+;; @param cit -- The citizen id to get degree centrality for.
+to-report citizen-degree-centrality [ cit-id ]
+  let citizen-arr list-as-py-array (map [ c -> agent-brain-as-py-dict [brain] of citizen c ] (range N)) false
+  let edge-arr list-as-py-array (sort social-friends) true
+  report py:runresult(
+    (word "node_degree_centrality(nlogo_graph_to_nx(" citizen-arr "," edge-arr ")," cit-id ")")
+  )
+end
+
+;;
+;; @param cit -- The citizen id to get degree centrality for.
+to-report citizens-degree-centrality [ cit-ids ]
+  let citizen-arr list-as-py-array (map [ c -> agent-brain-as-py-dict [brain] of citizen c ] (range N)) false
+  let edge-arr list-as-py-array (sort social-friends) true
+  report py:runresult(
+    (word "nodes_degree_centrality(nlogo_graph_to_nx(" citizen-arr "," edge-arr ")," (list-as-py-array cit-ids false) ")")
+  )
 end
 
 ;;;;;;;;;;;;;;;
@@ -1969,7 +2029,7 @@ ba-m
 ba-m
 0
 50
-25.0
+10.0
 1
 1
 NIL
@@ -2030,7 +2090,7 @@ citizen-citizen-influence
 citizen-citizen-influence
 0
 1
-0.5
+0.25
 0.01
 1
 NIL
@@ -2045,7 +2105,7 @@ citizen-media-influence
 citizen-media-influence
 0
 1
-0.714
+0.1
 0.01
 1
 NIL
@@ -2116,7 +2176,7 @@ SWITCH
 356
 dynamic-cit-media-influence?
 dynamic-cit-media-influence?
-1
+0
 1
 -1000
 
@@ -2127,7 +2187,7 @@ SWITCH
 272
 cit-media-gradual?
 cit-media-gradual?
-0
+1
 1
 -1000
 
@@ -2145,6 +2205,45 @@ cit-media-gradual-scalar
 1
 NIL
 HORIZONTAL
+
+PLOT
+1830
+34
+2190
+274
+degree-centrality-flint
+NIL
+NIL
+0.0
+10.0
+0.0
+1.0
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -16777216 true "" "plot citizens-degree-centrality [ (dict-value brain \"ID\") ] of citizens with [is-flint?]"
+
+SWITCH
+532
+575
+672
+608
+flint-organizing?
+flint-organizing?
+0
+1
+-1000
+
+CHOOSER
+345
+567
+520
+612
+flint-organizing-strategy
+flint-organizing-strategy
+"high-degree-media" "high-degree-citizens" "neighbors-of-neighbors"
+2
 
 @#$#@#$#@
 ## WHAT IS IT?
