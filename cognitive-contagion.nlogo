@@ -402,7 +402,7 @@ to go
 end
 
 to step
-  if (ticks mod 5) = 0 [
+  if (ticks mod 10) = 0 [
     set num-agents-adopted 0
   ]
   if cit-media-gradual? [ set-cit-media-over-time ]
@@ -462,6 +462,7 @@ to organize [ cit ]
   let max-media-subscriber-count max [ count subscribers ] of medias
   let max-social-neighbor-count max [ count social-friend-neighbors ] of citizens
   let num-cit-neighbors [ count out-link-neighbors ] of cit
+  let organizing-capacity 5
 
   if flint-organizing-strategy = "neighbors-of-neighbors" [
     let neighbor-neighbors [ sort social-friend-neighbors ] of [ social-friend-neighbors ] of cit
@@ -470,9 +471,8 @@ to organize [ cit ]
       foreach neighbor-set [ neighbor -> set neighbor-neighbors-merged (lput neighbor neighbor-neighbors-merged) ]
     ]
     set neighbor-neighbors-merged remove-duplicates neighbor-neighbors-merged
-    ;; TODO: Merge these lists and de-duplicate, THEN pick 5 of them to ask (n-of size agentset)
 
-    foreach n-of 5 neighbor-neighbors-merged [ neighbor ->
+    foreach up-to-n-of organizing-capacity neighbor-neighbors-merged [ neighbor ->
       ask neighbor [
         if cit != self [
           let num-neighbors count out-link-neighbors
@@ -487,11 +487,58 @@ to organize [ cit ]
       ]
     ]
   ]
+  if flint-organizing-strategy = "connected-media" [
+    let connected-media ([ out-link-neighbors ] of (citizen 1)) with [ is-media? self ]
+    ask up-to-n-of organizing-capacity connected-media [
+      if cit != self [
+        let num-neighbors count out-link-neighbors
+        let connect-prob (num-cit-neighbors / (num-cit-neighbors + num-neighbors)) * citizen-media-influence
+        let roll random-float 1
+        let neighbor-neighbor self
+        if roll <= connect-prob [
+          create-subscriber-to cit
+          create-subscriber-from cit
+        ]
+      ]
+    ]
+  ]
   if flint-organizing-strategy = "high-degree-media" [
-
+    let sorted-media sort-on [ count out-link-neighbors ] medias
+    let top-n sublist sorted-media (length sorted-media - organizing-capacity) (length sorted-media)
+    foreach top-n [ m ->
+      ask m [
+        if cit != self [
+          let num-neighbors count out-link-neighbors
+          let connect-prob (num-cit-neighbors / (num-cit-neighbors + num-neighbors)) * citizen-media-influence
+          let roll random-float 1
+          let neighbor-neighbor self
+          if roll <= connect-prob [
+            show (word "Connected to " cit)
+            create-subscriber-to cit
+            create-subscriber-from cit
+          ]
+        ]
+      ]
+    ]
   ]
   if flint-organizing-strategy = "high-degree-citizens" [
-
+    let sorted-citizens sort-on [ count out-link-neighbors ] citizens
+    let top-n sublist sorted-citizens (length sorted-citizens - organizing-capacity) (length sorted-citizens)
+    foreach top-n [ m ->
+      ask m [
+        if cit != self [
+          let num-neighbors count out-link-neighbors
+          let connect-prob (num-cit-neighbors / (num-cit-neighbors + num-neighbors)) * citizen-citizen-influence
+          let roll random-float 1
+          let neighbor-neighbor self
+          if roll <= connect-prob [
+            show (word "Connected to " cit)
+            create-social-friend-to cit
+            create-social-friend-from cit
+          ]
+        ]
+      ]
+    ]
   ]
 end
 
@@ -2105,7 +2152,7 @@ citizen-media-influence
 citizen-media-influence
 0
 1
-0.1
+0.108
 0.01
 1
 NIL
@@ -2187,7 +2234,7 @@ SWITCH
 272
 cit-media-gradual?
 cit-media-gradual?
-1
+0
 1
 -1000
 
@@ -2243,7 +2290,7 @@ CHOOSER
 flint-organizing-strategy
 flint-organizing-strategy
 "high-degree-media" "high-degree-citizens" "neighbors-of-neighbors"
-2
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
