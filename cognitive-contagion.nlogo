@@ -185,15 +185,21 @@ to create-media
   if media-agents? [
     let level-sizes community-sizes-by-level communities
     foreach level-sizes [ level ->
-;      show (word "creating " level " medias")
-      create-medias (level + 1) [
-        set brain create-agent-brain 0 [] [] [] []
-        set cur-message-id 0
-        setxy random-xcor random-ycor
-        set color green
-        set messages-heard []
-        set messages-believed []
-      ]
+      repeat (level + 1) [
+        ; TODO: Here, this is getting rid of media that then are needed for the connect-media function...
+        ; Somehow, need to mark some media as deleted, or check if they exist before connecting
+;        let roll random-float 1
+;        if roll <= media-connection-prob [
+          create-medias 1 [
+            set brain create-agent-brain 0 [] [] [] []
+            set cur-message-id 0
+            setxy random-xcor random-ycor
+            set color green
+            set messages-heard []
+            set messages-believed []
+          ]
+        ]
+;      ]
     ]
   ]
 end
@@ -263,6 +269,7 @@ to connect-media
     foreach level [ cit-media-pair ->
       let media-id media-id-base + (item 1 cit-media-pair)
 ;      show (word "creating ties from media " media-id " to " (item 0 cit-media-pair) " with media base " media-id-base)
+
       ask citizen (read-from-string (item 0 cit-media-pair)) [
         create-subscriber-from (media media-id) [ set weight media-citizen-influence ]
         create-subscriber-to (media media-id) [ set weight citizen-media-influence ]
@@ -402,9 +409,9 @@ to go
 end
 
 to step
-  if (ticks mod 10) = 0 [
+;  if (ticks mod 10) = 0 [
     set num-agents-adopted 0
-  ]
+;  ]
   if cit-media-gradual? [ set-cit-media-over-time ]
   if flint-organizing? [
     ask citizens with [is-flint?] [ organize self ]
@@ -458,19 +465,27 @@ end
 ;  ]
 ;end
 
+to-report set-merge-lists [ lists ]
+  let merged []
+  foreach lists [ l ->
+    foreach l [ element -> set merged (lput element merged) ]
+  ]
+  set merged remove-duplicates merged
+  report merged
+end
+
 to organize [ cit ]
   let max-media-subscriber-count max [ count subscribers ] of medias
   let max-social-neighbor-count max [ count social-friend-neighbors ] of citizens
   let num-cit-neighbors [ count out-link-neighbors ] of cit
-  let organizing-capacity 5
 
   if flint-organizing-strategy = "neighbors-of-neighbors" [
     let neighbor-neighbors [ sort social-friend-neighbors ] of [ social-friend-neighbors ] of cit
-    let neighbor-neighbors-merged []
-    foreach neighbor-neighbors [ neighbor-set ->
-      foreach neighbor-set [ neighbor -> set neighbor-neighbors-merged (lput neighbor neighbor-neighbors-merged) ]
-    ]
-    set neighbor-neighbors-merged remove-duplicates neighbor-neighbors-merged
+    let neighbor-neighbors-merged set-merge-lists neighbor-neighbors
+;    foreach neighbor-neighbors [ neighbor-set ->
+;      foreach neighbor-set [ neighbor -> set neighbor-neighbors-merged (lput neighbor neighbor-neighbors-merged) ]
+;    ]
+;    set neighbor-neighbors-merged remove-duplicates neighbor-neighbors-merged
 
     foreach up-to-n-of organizing-capacity neighbor-neighbors-merged [ neighbor ->
       ask neighbor [
@@ -1584,10 +1599,10 @@ NIL
 1
 
 TEXTBOX
-27
-345
-177
-363
+28
+396
+178
+414
 Number of citizens
 11
 0.0
@@ -1729,10 +1744,10 @@ Display
 1
 
 SWITCH
-27
-370
-146
-403
+28
+420
+147
+453
 load-graph?
 load-graph?
 1
@@ -1740,10 +1755,10 @@ load-graph?
 -1000
 
 INPUTBOX
-25
-409
-240
-469
+26
+460
+241
+520
 load-graph-path
 ./exp1-graph.csv
 1
@@ -1751,10 +1766,10 @@ load-graph-path
 String
 
 INPUTBOX
-27
-475
-242
-535
+28
+526
+243
+586
 save-graph-path
 ./exp1-graph.csv
 1
@@ -2028,10 +2043,10 @@ Influencer Parameters
 1
 
 TEXTBOX
-28
-324
-216
-347
+29
+375
+217
+398
 Graph Parameters
 11
 0.0
@@ -2076,7 +2091,7 @@ ba-m
 ba-m
 0
 50
-10.0
+3.0
 1
 1
 NIL
@@ -2152,7 +2167,7 @@ citizen-media-influence
 citizen-media-influence
 0
 1
-0.108
+0.25
 0.01
 1
 NIL
@@ -2234,7 +2249,7 @@ SWITCH
 272
 cit-media-gradual?
 cit-media-gradual?
-0
+1
 1
 -1000
 
@@ -2290,7 +2305,48 @@ CHOOSER
 flint-organizing-strategy
 flint-organizing-strategy
 "high-degree-media" "high-degree-citizens" "neighbors-of-neighbors"
+2
+
+SLIDER
+28
+320
+206
+354
+media-connection-prob
+media-connection-prob
+0
 1
+0.25
+0.01
+1
+NIL
+HORIZONTAL
+
+MONITOR
+1854
+409
+1970
+455
+Number of Media
+count medias
+17
+1
+11
+
+SLIDER
+348
+528
+521
+562
+organizing-capacity
+organizing-capacity
+0
+50
+5.0
+1
+1
+NIL
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
