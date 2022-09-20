@@ -409,9 +409,9 @@ to go
 end
 
 to step
-;  if (ticks mod 10) = 0 [
+  if (ticks mod 5) = 0 [
     set num-agents-adopted 0
-;  ]
+  ]
   if cit-media-gradual? [ set-cit-media-over-time ]
   if flint-organizing? [
     ask citizens with [is-flint?] [ organize self ]
@@ -518,13 +518,18 @@ to organize [ cit ]
     ]
   ]
   if flint-organizing-strategy = "high-degree-media" [
-    let sorted-media sort-on [ count out-link-neighbors ] medias
+    let sorted-media sort-on [ count out-link-neighbors ] (medias with [ not is-link? (out-link-to cit) ])
     let top-n sublist sorted-media (length sorted-media - organizing-capacity) (length sorted-media)
     foreach top-n [ m ->
       ask m [
         if cit != self [
           let num-neighbors count out-link-neighbors
-          let connect-prob (num-cit-neighbors / (num-cit-neighbors + num-neighbors)) * citizen-media-influence
+          let connect-prob 1
+          ifelse dynamic-cit-media-influence? [
+            set connect-prob (num-cit-neighbors / (num-cit-neighbors + num-neighbors)) * (num-cit-neighbors / (max [ length sort social-friend-neighbors ] of citizens))
+          ] [
+            set connect-prob (num-cit-neighbors / (num-cit-neighbors + num-neighbors)) * citizen-media-influence
+          ]
           let roll random-float 1
           let neighbor-neighbor self
           if roll <= connect-prob [
@@ -537,13 +542,56 @@ to organize [ cit ]
     ]
   ]
   if flint-organizing-strategy = "high-degree-citizens" [
-    let sorted-citizens sort-on [ count out-link-neighbors ] citizens
+    let sorted-citizens sort-on [ count out-link-neighbors ] (citizens with [ not is-link? (out-link-to cit) ])
     let top-n sublist sorted-citizens (length sorted-citizens - organizing-capacity) (length sorted-citizens)
     foreach top-n [ m ->
       ask m [
         if cit != self [
           let num-neighbors count out-link-neighbors
-          let connect-prob (num-cit-neighbors / (num-cit-neighbors + num-neighbors)) * citizen-citizen-influence
+          let connect-prob 1
+          ; TODO: Maybe change this... should cit-cit-influence act as some sort of global measure of social trust?
+          ; In that case, it would operate in concert with the dynamic trust based on degree
+          ifelse dynamic-cit-cit-influence? [
+            set connect-prob (num-cit-neighbors / (num-cit-neighbors + num-neighbors)) * (num-cit-neighbors / (max [ length sort social-friend-neighbors ] of citizens))
+          ] [
+            set connect-prob (num-cit-neighbors / (num-cit-neighbors + num-neighbors)) * citizen-citizen-influence
+          ]
+          let roll random-float 1
+          let neighbor-neighbor self
+          if roll <= connect-prob [
+            show (word "Connected to " cit)
+            create-social-friend-to cit
+            create-social-friend-from cit
+          ]
+        ]
+      ]
+    ]
+  ]
+  if flint-organizing-strategy = "high-degree-cit-and-media" [
+    let sorted-cit-media sort-on [ count out-link-neighbors ] (turtles with [ not is-link? (out-link-to cit) ])
+    let top-n sublist sorted-cit-media (length sorted-cit-media - organizing-capacity) (length sorted-cit-media)
+    foreach top-n [ m ->
+      ask m [
+        if cit != self [
+          let num-neighbors count out-link-neighbors
+          let connect-prob 1
+
+          if is-media? m [
+            ifelse dynamic-cit-media-influence? [
+              set connect-prob (num-cit-neighbors / (num-cit-neighbors + num-neighbors)) * (num-cit-neighbors / (max [ length sort social-friend-neighbors ] of citizens))
+            ] [
+              set connect-prob (num-cit-neighbors / (num-cit-neighbors + num-neighbors)) * citizen-media-influence
+            ]
+          ]
+
+          if is-citizen? m [
+            ifelse dynamic-cit-cit-influence? [
+              set connect-prob (num-cit-neighbors / (num-cit-neighbors + num-neighbors)) * (num-cit-neighbors / (max [ length sort social-friend-neighbors ] of citizens))
+            ] [
+              set connect-prob (num-cit-neighbors / (num-cit-neighbors + num-neighbors)) * citizen-citizen-influence
+            ]
+          ]
+
           let roll random-float 1
           let neighbor-neighbor self
           if roll <= connect-prob [
@@ -558,7 +606,13 @@ to organize [ cit ]
 end
 
 to-report agent-type-influence [ p sender receiver ]
-  if is-citizen? sender and is-citizen? receiver [ set p p * citizen-citizen-influence ]
+  if is-citizen? sender and is-citizen? receiver [
+    ifelse dynamic-cit-cit-influence? [
+      set p p * (([ length sort social-friend-neighbors ] of sender) / (max [ length sort social-friend-neighbors ] of citizens))
+    ] [
+      set p p * citizen-citizen-influence
+    ]
+  ]
   if is-media? sender and is-citizen? receiver [ set p p * media-citizen-influence ]
   if is-citizen? sender and is-media? receiver [
     ifelse dynamic-cit-media-influence? [
@@ -1373,10 +1427,10 @@ to-report tuple-list-as-py-dict [ l key-quotes? val-quotes? ]
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-1169
-13
-1798
-643
+1060
+14
+1689
+644
 -1
 -1
 18.82
@@ -1451,10 +1505,10 @@ NIL
 1
 
 PLOT
-1172
-717
-1569
-910
+1063
+718
+1460
+911
 A Histogram
 A Value
 Number of Agents
@@ -1469,10 +1523,10 @@ PENS
 "default" 1.0 1 -16777216 true "" "plot-pen-reset  ;; erase what we plotted before\nset-plot-x-range -1 (belief-resolution + 1)\n\nhistogram [dict-value brain \"A\"] of citizens"
 
 MONITOR
-1168
-918
-1226
-963
+1059
+919
+1117
+964
 0
 count citizens with [dict-value brain \"A\" = 0]
 1
@@ -1480,10 +1534,10 @@ count citizens with [dict-value brain \"A\" = 0]
 11
 
 MONITOR
-1227
-918
-1284
-963
+1118
+919
+1175
+964
 1
 count citizens with [dict-value brain \"A\" = 1]
 1
@@ -1491,10 +1545,10 @@ count citizens with [dict-value brain \"A\" = 1]
 11
 
 MONITOR
-1288
-918
-1354
-963
+1179
+919
+1245
+964
 2
 count citizens with [dict-value brain \"A\" = 2]
 1
@@ -1502,10 +1556,10 @@ count citizens with [dict-value brain \"A\" = 2]
 11
 
 MONITOR
-1360
-918
-1418
-963
+1250
+919
+1308
+964
 3
 count citizens with [dict-value brain \"A\" = 3]
 1
@@ -1513,10 +1567,10 @@ count citizens with [dict-value brain \"A\" = 3]
 11
 
 MONITOR
-1417
-918
-1475
-963
+1308
+919
+1366
+964
 4
 count citizens with [dict-value brain \"A\" = 4]
 1
@@ -1541,10 +1595,10 @@ NIL
 0
 
 SLIDER
-527
-649
-657
-682
+528
+722
+658
+755
 threshold
 threshold
 0
@@ -1556,10 +1610,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-177
-278
-349
-311
+178
+314
+350
+347
 epsilon
 epsilon
 0
@@ -1599,20 +1653,20 @@ NIL
 1
 
 TEXTBOX
-28
-396
-178
-414
+29
+432
+179
+450
 Number of citizens
 11
 0.0
 1
 
 TEXTBOX
-177
-258
-343
-286
+178
+294
+344
+322
 Threshold to subscribe to media
 11
 0.0
@@ -1639,25 +1693,25 @@ Simulation Controls
 1
 
 TEXTBOX
-1173
-659
-1323
-677
+1064
+660
+1214
+678
 Simulation State Plots
 14
 0.0
 1
 
 SLIDER
-253
-369
-425
-402
+247
+460
+419
+493
 N
 N
 0
 10000
-1000.0
+500.0
 10
 1
 NIL
@@ -1686,20 +1740,20 @@ show-social-friends?
 -1000
 
 TEXTBOX
-1172
-687
-1322
-705
+1063
+688
+1213
+706
 Cognitive State
 11
 0.0
 1
 
 PLOT
-723
-689
-992
-924
+1069
+1014
+1338
+1249
 Social Friend Degree of Nodes
 NIL
 NIL
@@ -1714,10 +1768,10 @@ PENS
 "default" 1.0 1 -16777216 true "" "set-plot-x-range 0 (max [count social-friend-neighbors] of citizens) + 1\nhistogram [count social-friend-neighbors] of citizens"
 
 TEXTBOX
-719
-658
-907
-681
+1065
+983
+1253
+1006
 Aggregate Charts
 13
 0.0
@@ -1725,9 +1779,9 @@ Aggregate Charts
 
 CHOOSER
 330
-703
+775
 472
-748
+820
 spread-type
 spread-type
 "simple" "complex" "cognitive"
@@ -1744,10 +1798,10 @@ Display
 1
 
 SWITCH
-28
-420
-147
-453
+29
+455
+148
+488
 load-graph?
 load-graph?
 1
@@ -1755,10 +1809,10 @@ load-graph?
 -1000
 
 INPUTBOX
-26
-460
-241
-520
+27
+495
+242
+555
 load-graph-path
 ./exp1-graph.csv
 1
@@ -1766,10 +1820,10 @@ load-graph-path
 String
 
 INPUTBOX
-28
-526
-243
-586
+29
+562
+244
+622
 save-graph-path
 ./exp1-graph.csv
 1
@@ -1794,10 +1848,10 @@ NIL
 1
 
 CHOOSER
-19
-702
-172
-747
+20
+774
+173
+819
 cognitive-fn
 cognitive-fn
 "linear-gullible" "linear-stubborn" "linear-mid" "threshold-gullible" "threshold-mid" "threshold-stubborn" "sigmoid-gullible" "sigmoid-stubborn" "sigmoid-mid"
@@ -1805,9 +1859,9 @@ cognitive-fn
 
 SLIDER
 165
-648
+720
 339
-681
+753
 simple-spread-chance
 simple-spread-chance
 0
@@ -1819,10 +1873,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-347
-649
-521
-682
+348
+722
+522
+755
 complex-spread-ratio
 complex-spread-ratio
 0
@@ -1834,10 +1888,10 @@ NIL
 HORIZONTAL
 
 CHOOSER
-184
-703
-323
-748
+185
+775
+324
+820
 brain-type
 brain-type
 "discrete" "continuous"
@@ -1859,10 +1913,10 @@ NIL
 HORIZONTAL
 
 INPUTBOX
-209
-177
-526
-239
+24
+215
+341
+277
 sim-output-dir
 D:/school/grad-school/Tufts/research/flint-media-model/simulation-data/
 1
@@ -1870,10 +1924,10 @@ D:/school/grad-school/Tufts/research/flint-media-model/simulation-data/
 String
 
 PLOT
-790
-15
-1164
-303
+1702
+280
+2076
+568
 percent-agent-beliefs
 Steps
 % of Agents
@@ -1887,10 +1941,10 @@ false
 PENS
 
 MONITOR
-1472
-918
-1530
-963
+1363
+919
+1421
+964
 5
 count citizens with [dict-value brain \"A\" = 5]
 17
@@ -1898,10 +1952,10 @@ count citizens with [dict-value brain \"A\" = 5]
 11
 
 MONITOR
-1533
-918
-1591
-963
+1424
+919
+1482
+964
 6
 count citizens with [dict-value brain \"A\" = 6]
 17
@@ -1909,10 +1963,10 @@ count citizens with [dict-value brain \"A\" = 6]
 11
 
 SWITCH
-27
-275
-161
-308
+28
+310
+162
+343
 media-agents?
 media-agents?
 0
@@ -1921,9 +1975,9 @@ media-agents?
 
 SLIDER
 20
-792
+864
 193
-825
+897
 cognitive-exponent
 cognitive-exponent
 -10
@@ -1936,9 +1990,9 @@ HORIZONTAL
 
 SLIDER
 20
-752
+824
 193
-785
+857
 cognitive-scalar
 cognitive-scalar
 -20
@@ -1951,9 +2005,9 @@ HORIZONTAL
 
 SWITCH
 200
-752
+824
 345
-785
+857
 cognitive-scalar?
 cognitive-scalar?
 1
@@ -1961,10 +2015,10 @@ cognitive-scalar?
 -1000
 
 SWITCH
-203
-793
-368
-826
+204
+865
+369
+898
 cognitive-exponent?
 cognitive-exponent?
 0
@@ -1973,9 +2027,9 @@ cognitive-exponent?
 
 SLIDER
 20
-837
+909
 193
-870
+942
 cognitive-translate
 cognitive-translate
 -10
@@ -1987,10 +2041,10 @@ NIL
 HORIZONTAL
 
 SWITCH
-203
-837
-366
-870
+204
+909
+367
+942
 cognitive-translate?
 cognitive-translate?
 0
@@ -1998,30 +2052,30 @@ cognitive-translate?
 -1000
 
 TEXTBOX
-23
-624
-211
-647
+24
+697
+212
+720
 Contagion Parameters
 11
 0.0
 1
 
 CHOOSER
-255
-410
-394
-455
+247
+499
+386
+544
 graph-type
 graph-type
 "erdos-renyi" "watts-strogatz" "barabasi-albert" "mag" "facebook" "kronecker"
 2
 
 SLIDER
-437
-369
-560
-402
+255
+573
+378
+606
 erdos-renyi-p
 erdos-renyi-p
 0
@@ -2033,30 +2087,30 @@ NIL
 HORIZONTAL
 
 TEXTBOX
-27
-250
-215
-273
+28
+285
+216
+308
 Influencer Parameters
 11
 0.0
 1
 
 TEXTBOX
-29
-375
-217
-398
+30
+410
+218
+433
 Graph Parameters
 11
 0.0
 1
 
 SLIDER
-564
-369
-698
-402
+383
+573
+517
+606
 watts-strogatz-p
 watts-strogatz-p
 0
@@ -2068,10 +2122,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-565
-409
-692
-442
+383
+613
+510
+646
 watts-strogatz-k
 watts-strogatz-k
 0
@@ -2083,10 +2137,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-435
-442
-560
-475
+254
+612
+379
+645
 ba-m
 ba-m
 0
@@ -2097,31 +2151,21 @@ ba-m
 NIL
 HORIZONTAL
 
-TEXTBOX
-437
-418
-543
-442
-Barabasi-Albert (ba)
-11
-0.0
-1
-
 CHOOSER
-564
-472
-703
-517
+524
+574
+663
+619
 mag-style
 mag-style
 "default" "homophilic" "heterophilic"
 0
 
 SWITCH
-24
-648
-157
-681
+25
+720
+158
+753
 contagion-on?
 contagion-on?
 0
@@ -2144,10 +2188,10 @@ NIL
 HORIZONTAL
 
 SLIDER
+360
 359
-323
-537
-356
+538
+392
 citizen-citizen-influence
 citizen-citizen-influence
 0
@@ -2159,10 +2203,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-359
-279
-534
-312
+360
+315
+535
+348
 citizen-media-influence
 citizen-media-influence
 0
@@ -2174,10 +2218,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-541
-279
-716
-312
+360
+400
+535
+433
 media-citizen-influence
 media-citizen-influence
 0
@@ -2189,20 +2233,20 @@ NIL
 HORIZONTAL
 
 TEXTBOX
-362
-259
-512
-277
+363
+295
+513
+313
 Link weight settings
 11
 0.0
 1
 
 SLIDER
-530
-533
-702
-566
+860
+465
+1020
+499
 flint-community-size
 flint-community-size
 0
@@ -2214,10 +2258,10 @@ NIL
 HORIZONTAL
 
 PLOT
-791
-315
-1168
-574
+1702
+15
+2079
+274
 num-new-beliefs
 NIL
 NIL
@@ -2232,10 +2276,10 @@ PENS
 "default" 1.0 0 -16777216 true "" "plot num-agents-adopted"
 
 SWITCH
-546
-323
-761
-356
+713
+315
+928
+348
 dynamic-cit-media-influence?
 dynamic-cit-media-influence?
 0
@@ -2243,10 +2287,10 @@ dynamic-cit-media-influence?
 -1000
 
 SWITCH
-541
-239
-698
-272
+544
+317
+701
+350
 cit-media-gradual?
 cit-media-gradual?
 1
@@ -2254,10 +2298,10 @@ cit-media-gradual?
 -1000
 
 SLIDER
-539
-200
-721
-233
+545
+357
+705
+391
 cit-media-gradual-scalar
 cit-media-gradual-scalar
 1
@@ -2269,10 +2313,10 @@ NIL
 HORIZONTAL
 
 PLOT
-1830
-34
-2190
-274
+1702
+579
+2062
+819
 degree-centrality-flint
 NIL
 NIL
@@ -2287,10 +2331,10 @@ PENS
 "default" 1.0 0 -16777216 true "" "plot citizens-degree-centrality [ (dict-value brain \"ID\") ] of citizens with [is-flint?]"
 
 SWITCH
-532
-575
-672
-608
+874
+505
+1014
+538
 flint-organizing?
 flint-organizing?
 0
@@ -2298,20 +2342,20 @@ flint-organizing?
 -1000
 
 CHOOSER
-345
-567
-520
-612
+675
+499
+869
+544
 flint-organizing-strategy
 flint-organizing-strategy
-"high-degree-media" "high-degree-citizens" "neighbors-of-neighbors"
-2
+"high-degree-media" "high-degree-citizens" "neighbors-of-neighbors" "high-degree-cit-and-media"
+3
 
 SLIDER
-28
-320
-206
-354
+29
+355
+207
+388
 media-connection-prob
 media-connection-prob
 0
@@ -2323,10 +2367,10 @@ NIL
 HORIZONTAL
 
 MONITOR
-1854
-409
-1970
-455
+1480
+719
+1596
+764
 Number of Media
 count medias
 17
@@ -2334,10 +2378,10 @@ count medias
 11
 
 SLIDER
-348
-528
-521
-562
+677
+460
+850
+493
 organizing-capacity
 organizing-capacity
 0
@@ -2347,6 +2391,37 @@ organizing-capacity
 1
 NIL
 HORIZONTAL
+
+TEXTBOX
+255
+553
+443
+576
+Graph specific parameters
+11
+0.0
+1
+
+SWITCH
+713
+358
+906
+392
+dynamic-cit-cit-influence?
+dynamic-cit-cit-influence?
+0
+1
+-1000
+
+TEXTBOX
+680
+439
+868
+462
+Citizen behaviors
+11
+0.0
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
