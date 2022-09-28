@@ -1091,6 +1091,42 @@ def gradual_trust_connectivity_exp_results_df(path):
     path)
   return multidata_to_dataframes(measures, df_columns, multidata, multidata_key_params, props, params)
 
+def dynamic_organizing_exp_results_df(path):
+  simple_spread_chance = [ '0.1', '0.5' ]
+  ba_m = ['3','10']
+  organizing_capacity = ['1','5','10']
+  organizing_strategy = ['neighbors-of-neighbors','high-degree-media','high-degree-citizens','high-degree-cit-and-media']
+
+  measures = ['new-beliefs']
+  df_columns = { "new-beliefs": ['n','spread-type','simple-spread-chance','graph-type','ba-m','organizing-capacity','organizing-strategy'] }
+  multidata_key_params = ['simple-spread-chance','ba-m','organizing-capacity','organizing-strategy']
+
+  (multidata, props, params) = get_all_multidata(
+    [simple_spread_chance, ba_m, organizing_capacity, organizing_strategy],
+    {'percent-agent-beliefs': [PLOT_TYPES.LINE, PLOT_TYPES.STACK],
+    'new-beliefs': [PLOT_TYPES.LINE]},
+    path)
+  return multidata_to_dataframes(measures, df_columns, multidata, multidata_key_params, props, params)
+
+def nondynamic_organizing_exp_results_df(path):
+  simple_spread_chance = [ '0.1', '0.5' ]
+  ba_m = ['3','10']
+  cit_cit_influence = ['0.25','0.5']
+  cit_media_influence = ['0.25','0.5']
+  organizing_capacity = ['1','5']
+  organizing_strategy = ['neighbors-of-neighbors','high-degree-media','high-degree-citizens','high-degree-cit-and-media']
+
+  measures = ['new-beliefs']
+  df_columns = { "new-beliefs": ['n','spread-type','simple-spread-chance','graph-type','ba-m','cit-media-influence','cit-cit-influence','organizing-capacity','organizing-strategy'] }
+  multidata_key_params = ['simple-spread-chance','ba-m','cit-media-influence','cit-cit-influence','organizing-capacity','organizing-strategy']
+
+  (multidata, props, params) = get_all_multidata(
+    [simple_spread_chance,ba_m,cit_media_influence,cit_cit_influence,organizing_capacity,organizing_strategy],
+    {'percent-agent-beliefs': [PLOT_TYPES.LINE, PLOT_TYPES.STACK],
+    'new-beliefs': [PLOT_TYPES.LINE]},
+    path)
+  return multidata_to_dataframes(measures, df_columns, multidata, multidata_key_params, props, params)
+
 def process_trust_connectivity_exp_results(path):
   ba_m = ['3','10','25']
 
