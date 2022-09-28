@@ -1111,6 +1111,31 @@ def process_belief_spread_dynamic_results(path):
     'new-beliefs': [PLOT_TYPES.LINE]},
     path)
 
+def process_dynamic_organizing_results(path):
+  simple_spread_chance = [ '0.1', '0.5' ]
+  ba_m = ['3','10']
+  organizing_capacity = ['1','5','10']
+  organizing_strategy = ['neighbors-of-neighbors','high-degree-media','high-degree-citizens','high-degree-cit-and-media']
+
+  process_exp_outputs(
+    [simple_spread_chance,ba_m,organizing_capacity,organizing_strategy],
+    {'percent-agent-beliefs': [PLOT_TYPES.LINE, PLOT_TYPES.STACK],
+    'new-beliefs': [PLOT_TYPES.LINE]},
+    path)
+
+def process_nondynamic_organizing_results(path):
+  simple_spread_chance = [ '0.1', '0.5' ]
+  ba_m = ['3','10']
+  cit_cit_influence = ['0.25','0.5']
+  cit_media_influence = ['0.25','0.5']
+  organizing_capacity = ['1','5']
+  organizing_strategy = ['neighbors-of-neighbors','high-degree-media','high-degree-citizens','high-degree-cit-and-media']
+
+  process_exp_outputs(
+    [simple_spread_chance,ba_m,cit_media_influence,cit_cit_influence,organizing_capacity,organizing_strategy],
+    {'percent-agent-beliefs': [PLOT_TYPES.LINE, PLOT_TYPES.STACK],
+    'new-beliefs': [PLOT_TYPES.LINE]},
+    path)
 
 def multidata_to_dataframes(measures, df_columns, multidata, multidata_key_params, props, params):
   '''
