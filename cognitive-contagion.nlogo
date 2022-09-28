@@ -1866,7 +1866,7 @@ simple-spread-chance
 simple-spread-chance
 0
 1
-0.5
+0.1
 0.01
 1
 NIL
@@ -2145,7 +2145,7 @@ ba-m
 ba-m
 0
 50
-3.0
+10.0
 1
 1
 NIL
@@ -2246,7 +2246,7 @@ SLIDER
 860
 465
 1020
-499
+498
 flint-community-size
 flint-community-size
 0
@@ -2301,7 +2301,7 @@ SLIDER
 545
 357
 705
-391
+390
 cit-media-gradual-scalar
 cit-media-gradual-scalar
 1
@@ -2406,7 +2406,7 @@ SWITCH
 713
 358
 906
-392
+391
 dynamic-cit-cit-influence?
 dynamic-cit-cit-influence?
 0
@@ -3121,6 +3121,7 @@ py:run (word "create_nested_dirs('" contagion-dir "')")</setup>
 export-world (word contagion-dir "/" rand "_world.csv")
 export-plot "percent-agent-beliefs" (word contagion-dir "/" rand "_percent-agent-beliefs.csv")
 export-plot "num-new-beliefs" (word contagion-dir "/" rand "_new-beliefs.csv")</final>
+    <timeLimit steps="500"/>
     <metric>count citizens</metric>
     <enumeratedValueSet variable="contagion-on?">
       <value value="true"/>
@@ -3156,7 +3157,6 @@ export-plot "num-new-beliefs" (word contagion-dir "/" rand "_new-beliefs.csv")</
     <enumeratedValueSet variable="ba-m">
       <value value="3"/>
       <value value="10"/>
-      <value value="25"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="epsilon">
       <value value="0"/>
@@ -3259,7 +3259,7 @@ export-plot "num-new-beliefs" (word contagion-dir "/" rand "_new-beliefs.csv")</
       <value value="0.005"/>
     </enumeratedValueSet>
   </experiment>
-  <experiment name="non-dynamic-organizing-test" repetitions="30" sequentialRunOrder="false" runMetricsEveryStep="false">
+  <experiment name="non-dynamic-organizing-test" repetitions="10" sequentialRunOrder="false" runMetricsEveryStep="false">
     <setup>setup
 set-cognitive-contagion-params
 let run-dir (word sim-output-dir substring date-time-safe 11 (length date-time-safe) "-non-dynamic-organizing")
@@ -3290,7 +3290,7 @@ export-plot "num-new-beliefs" (word contagion-dir "/" rand "_new-beliefs.csv")</
       <value value="500"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="tick-end">
-      <value value="500"/>
+      <value value="300"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="spread-type">
       <value value="&quot;simple&quot;"/>
