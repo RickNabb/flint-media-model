@@ -60,6 +60,7 @@ breed [ citizens citizen ]
 
 directed-link-breed [ social-friends social-friend ]
 directed-link-breed [ subscribers subscriber ]
+directed-link-breed [ media-peers media-peer ]
 
 social-friends-own [ weight ]
 subscribers-own [ weight ]
@@ -183,6 +184,7 @@ end
 
 to create-media
   if media-agents? [
+    let id N
     let level-sizes community-sizes-by-level communities
     foreach level-sizes [ level ->
       repeat (level + 1) [
@@ -191,13 +193,14 @@ to create-media
 ;        let roll random-float 1
 ;        if roll <= media-connection-prob [
           create-medias 1 [
-            set brain create-agent-brain 0 [] [] [] []
+            set brain create-agent-brain id [] [] [] []
             set cur-message-id 0
             setxy random-xcor random-ycor
             set color green
             set messages-heard []
             set messages-believed []
           ]
+          set id id + 1
         ]
 ;      ]
     ]
@@ -279,6 +282,24 @@ to connect-media
     if i < length level-sizes [
       set media-id-base media-id-base + (item i level-sizes)
       set i i + 1
+    ]
+  ]
+
+  if media-monitor-peers? [
+    let r N
+    let peers media-peer-connections
+    foreach peers [ connections ->
+      let c N
+      foreach connections [ connect? ->
+        if connect? = 1 [
+          ask media r [
+            create-media-peer-to (media c)
+            create-media-peer-from (media c)
+          ]
+        ]
+        set c c + 1
+      ]
+      set r r + 1
     ]
   ]
 ;  ask medias [
@@ -409,9 +430,10 @@ to go
 end
 
 to step
-  if (ticks mod 5) = 0 [
-    set num-agents-adopted 0
-  ]
+;  if (ticks mod 5) = 0 [
+;    set num-agents-adopted 0
+;  ]
+  set num-agents-adopted 0
   if cit-media-gradual? [ set-cit-media-over-time ]
   if flint-organizing? [
     ask citizens with [is-flint?] [ organize self ]
@@ -421,7 +443,7 @@ to step
     ask turtles with [ not is-agent-brain-empty? self ] [
       let c self
       ask out-link-neighbors [
-       ; show (word "Citizen " self " receiving message " (agent-brain-malleable-values c) " from citizen " c)
+;        show (word self " receiving message " (agent-brain-malleable-values c) " from " c)
         receive-message self c (agent-brain-malleable-values c) 0
       ]
     ]
@@ -502,28 +524,18 @@ to organize [ cit ]
       ]
     ]
   ]
-  if flint-organizing-strategy = "connected-media" [
-    let connected-media ([ out-link-neighbors ] of (citizen 1)) with [ is-media? self ]
-    ask up-to-n-of organizing-capacity connected-media [
-      if cit != self [
-        let num-neighbors count out-link-neighbors
-        let connect-prob (num-cit-neighbors / (num-cit-neighbors + num-neighbors)) * citizen-media-influence
-        let roll random-float 1
-        let neighbor-neighbor self
-        if roll <= connect-prob [
-          create-subscriber-to cit
-          create-subscriber-from cit
-        ]
-      ]
-    ]
-  ]
   if flint-organizing-strategy = "high-degree-media" [
-    let sorted-media sort-on [ count out-link-neighbors ] (medias with [ not is-link? (out-link-to cit) ])
-    let top-n sublist sorted-media (length sorted-media - organizing-capacity) (length sorted-media)
+    let sorted-media sort-on [ count subscriber-neighbors ] (medias with [ not is-link? (out-link-to cit) ])
+    let top-n []
+    ifelse length sorted-media > organizing-capacity [
+      set top-n sublist sorted-media (length sorted-media - organizing-capacity) (length sorted-media)
+    ] [
+      set top-n sorted-media
+    ]
     foreach top-n [ m ->
       ask m [
         if cit != self [
-          let num-neighbors count out-link-neighbors
+          let num-neighbors count subscriber-neighbors
           let connect-prob 1
           ifelse dynamic-cit-media-influence? [
             set connect-prob (num-cit-neighbors / (num-cit-neighbors + num-neighbors)) * (num-cit-neighbors / (max [ length sort social-friend-neighbors ] of citizens))
@@ -573,7 +585,12 @@ to organize [ cit ]
     foreach top-n [ m ->
       ask m [
         if cit != self [
-          let num-neighbors count out-link-neighbors
+          let num-neighbors 0
+          (ifelse is-media? m [
+            set num-neighbors count subscriber-neighbors
+          ] is-citizen? m [
+            set num-neighbors count out-link-neighbors
+          ])
           let connect-prob 1
 
           if is-media? m [
@@ -621,6 +638,7 @@ to-report agent-type-influence [ p sender receiver ]
       set p p * citizen-media-influence
     ]
   ]
+  if is-media? sender and is-media? receiver [ set p p * media-media-influence * (([ length sort subscribers ] of sender) / (max [ length sort subscribers ] of medias)) ]
   report p
 end
 
@@ -628,7 +646,7 @@ end
 ;; share it or not.
 ;;
 ;; @param cit - The citizen agent who is receiving the message.
-;; @param sender - The originator of the message (CURRENTLY NOT USED -- SHOULD BE REMOVED)
+;; @param sender - The originator of the message
 ;; @param message - The message itself.
 ;; @param message-id - The unique ID of the message (used so the citizen agent does not duplicate shares)
 to receive-message [ cit sender message message-id ]
@@ -689,7 +707,7 @@ to receive-message [ cit sender message message-id ]
         let p agent-type-influence simple-spread-chance sender cit
 
         if roll <= p [
-          ;show(word "believing " message-id)
+;          show(word "believing " message-id)
           ;show (believe-message-py brain message)
           let b brain
           set brain (believe-message-py brain message)
@@ -938,7 +956,13 @@ end
 to layout
   update-agents
 
-  ifelse show-media-connections? [ ask subscribers [ make-link-visible ] ] [ ask subscribers [ make-link-transparent ] ]
+  ifelse show-media-connections? [
+    ask subscribers [ make-link-visible ]
+    ask media-peers [ make-link-visible ]
+  ] [
+    ask subscribers [ make-link-transparent ]
+    ask media-peers [ make-link-transparent ]
+  ]
   ifelse show-social-friends? [
     ask social-friends [
       make-link-visible
@@ -1190,6 +1214,17 @@ to-report citizens-degree-centrality [ cit-ids ]
   let edge-arr list-as-py-array (sort social-friends) true
   report py:runresult(
     (word "nodes_degree_centrality(nlogo_graph_to_nx(" citizen-arr "," edge-arr ")," (list-as-py-array cit-ids false) ")")
+  )
+end
+
+to-report media-peer-connections
+  let citizen-arr list-as-py-array (map [ cit -> agent-brain-as-py-dict [brain] of citizen cit ] (range N)) false
+  let edge-arr list-as-py-array (sort social-friends) true
+  let media-arr list-as-py-array (map [ med -> agent-brain-as-py-dict [brain] of med ] (sort medias)) false
+  let subscriber-arr list-as-py-array (sort subscribers) true
+;  show (word "nlogo_graph_to_nx_with_media(" citizen-arr "," edge-arr "," media-arr "," subscriber-arr ")")
+  report py:runresult(
+    (word "media_peer_connections(nlogo_graph_to_nx_with_media(" citizen-arr "," edge-arr "," media-arr "," subscriber-arr "))")
   )
 end
 
@@ -1906,7 +1941,7 @@ tick-end
 tick-end
 30
 1000
-500.0
+300.0
 1
 1
 NIL
@@ -2145,7 +2180,7 @@ ba-m
 ba-m
 0
 50
-10.0
+3.0
 1
 1
 NIL
@@ -2196,7 +2231,7 @@ citizen-citizen-influence
 citizen-citizen-influence
 0
 1
-0.25
+0.5
 0.01
 1
 NIL
@@ -2211,7 +2246,7 @@ citizen-media-influence
 citizen-media-influence
 0
 1
-0.25
+0.5
 0.01
 1
 NIL
@@ -2337,7 +2372,7 @@ SWITCH
 538
 flint-organizing?
 flint-organizing?
-0
+1
 1
 -1000
 
@@ -2349,7 +2384,7 @@ CHOOSER
 flint-organizing-strategy
 flint-organizing-strategy
 "high-degree-media" "high-degree-citizens" "neighbors-of-neighbors" "high-degree-cit-and-media"
-3
+0
 
 SLIDER
 29
@@ -2422,6 +2457,32 @@ Citizen behaviors
 11
 0.0
 1
+
+SLIDER
+455
+447
+629
+480
+media-media-influence
+media-media-influence
+0
+1
+0.5
+0.01
+1
+NIL
+HORIZONTAL
+
+SWITCH
+589
+214
+762
+247
+media-monitor-peers?
+media-monitor-peers?
+1
+1
+-1000
 
 @#$#@#$#@
 ## WHAT IS IT?
@@ -3170,10 +3231,6 @@ export-plot "num-new-beliefs" (word contagion-dir "/" rand "_new-beliefs.csv")</
     <enumeratedValueSet variable="dynamic-cit-cit-influence?">
       <value value="true"/>
     </enumeratedValueSet>
-    <enumeratedValueSet variable="citizen-media-influence">
-      <value value="0.25"/>
-      <value value="0.5"/>
-    </enumeratedValueSet>
     <enumeratedValueSet variable="flint-organizing?">
       <value value="true"/>
     </enumeratedValueSet>
@@ -3270,6 +3327,7 @@ py:run (word "create_nested_dirs('" contagion-dir "')")</setup>
 export-world (word contagion-dir "/" rand "_world.csv")
 export-plot "percent-agent-beliefs" (word contagion-dir "/" rand "_percent-agent-beliefs.csv")
 export-plot "num-new-beliefs" (word contagion-dir "/" rand "_new-beliefs.csv")</final>
+    <timeLimit steps="300"/>
     <metric>count citizens</metric>
     <enumeratedValueSet variable="contagion-on?">
       <value value="true"/>
@@ -3305,7 +3363,6 @@ export-plot "num-new-beliefs" (word contagion-dir "/" rand "_new-beliefs.csv")</
     <enumeratedValueSet variable="ba-m">
       <value value="3"/>
       <value value="10"/>
-      <value value="25"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="epsilon">
       <value value="0"/>
@@ -3333,7 +3390,6 @@ export-plot "num-new-beliefs" (word contagion-dir "/" rand "_new-beliefs.csv")</
     <enumeratedValueSet variable="organizing-capacity">
       <value value="1"/>
       <value value="5"/>
-      <value value="10"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="flint-organizing-strategy">
       <value value="&quot;neighbors-of-neighbors&quot;"/>

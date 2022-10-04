@@ -227,15 +227,24 @@ def nlogo_graph_to_nx(citizens, friend_links):
 
 def nlogo_graph_to_nx_with_media(citizens, friend_links, media, subscribers):
   G = nx.Graph()
-  agents = citizens + media
+  # agents = citizens + media
   links = friend_links + subscribers
-  for agent in agents:
+  for agent in citizens:
     cit_id = int(agent['ID'])
     G.add_node(cit_id)
+    G.nodes[cit_id]['type'] = 'citizen'
     for attr in agent['malleable']:
       G.nodes[cit_id][attr] = agent[attr]
     for attr in agent['prior']:
       G.nodes[cit_id][attr] = agent[attr]
+  for agent in media:
+    media_id = int(agent['ID'])
+    G.add_node(media_id)
+    G.nodes[media_id]['type'] = 'media'
+    for attr in agent['malleable']:
+      G.nodes[media_id][attr] = agent[attr]
+    for attr in agent['prior']:
+      G.nodes[media_id][attr] = agent[attr]
   for link in links:
     link_split = link.split(' ')
     end1 = link_split[1]
@@ -345,6 +354,17 @@ def nlogo_communities_by_level(citizens, social_friends):
   levels = len(dendrogram)
   return [ community_louvain.partition_at_level(dendrogram, level) for level in range(levels) ]
 
+def media_peer_connections(G):
+  media_degrees = np.array([ G.degree(node) for node in G.nodes if G.nodes[node]['type'] == 'media'])
+  num_media = len(media_degrees)
+  max_degree = max(media_degrees)
+  connection_prob = media_degrees / max_degree
+  prob_matrix = np.ones((num_media,num_media)) * connection_prob
+  prob_matrix = np.multiply(prob_matrix, 1 - np.identity(num_media))
+  rolls = np.random.rand(num_media,num_media)
+  connections = (rolls <= prob_matrix).astype(int)
+  return connections
+
 def graph_homophily(G):
   '''
   Takes a measure of homophily in the graph based on first-level neighbor
@@ -373,3 +393,11 @@ def node_degree_centrality(G, node):
 
 def nodes_degree_centrality(G, nodes):
   return sum([ node_degree_centrality(G, node) for node in nodes ])
+
+def test_ws_graph_normal(n, k, p):
+  G = nx.watts_strogatz_graph(n, k, p)
+  agent_bels = normal_dist_multiple(7, 3, 1, n, 2)
+  for i in range(n):
+    G.nodes[i]['A'] = agent_bels[i][0]
+    G.nodes[i]['B'] = agent_bels[i][1]
+  return G
