@@ -142,6 +142,9 @@ def apply_filter(int_data):
 
 def loop_per_row(df):
     df.insert(0, "class", " ")
+    peak_class_list = []
+    height_list = []
+    time_list = []
     #print(df['simple-spread-chance'])
     for i in range(0,df.shape[0]):
         run1 = df.iloc[i]
@@ -150,7 +153,13 @@ def loop_per_row(df):
         int_data = convert_to_int(finallist)
         #print(int_data)
         '''for full dataframe'''
-        class_of_peak = evaluate_peak(int_data)
+        height_of_peak = evaluate_peak(int_data)
+        time_of_peak = evaluate_time_peak(int_data)
+        height_list.append(height_of_peak)
+        time_list.append(time_of_peak)
+        class_of_peak=(height_of_peak/700)+(time_of_peak/500)
+        #print('class', class_of_peak)
+        peak_class_list.append(class_of_peak)
         df.at[i,'class'] = class_of_peak
         df['simple-spread-chance']=df['simple-spread-chance'].astype(float)
         df['ba-m'] = df['ba-m'].astype(float)
@@ -158,7 +167,22 @@ def loop_per_row(df):
         df['citizen-citizen-influence']=df['citizen-citizen-influence'].astype(float)
         df['flint-community-size']=df['flint-community-size'].astype(float)
         #INCLUDE WHEN USING GRADUAL SCALAR
-        #df['citizen-media-gradual-scalar'] = df['citizen-media-gradual-scalar'].astype(float)
+        df['citizen-media-gradual-scalar'] = df['citizen-media-gradual-scalar'].astype(float)
+    plt.hist(peak_class_list, bins=30)
+    plt.ylabel('frequency')
+    plt.xlabel('class_of_peak')
+    plt.title('Histogram of Peak Values')
+    plt.show()
+    plt.hist(time_list, bins=30)
+    plt.ylabel('frequency')
+    plt.xlabel('class_of_peak')
+    plt.title('Histogram of Time of Peak Values')
+    plt.show()
+    plt.hist(height_list, bins=30)
+    plt.ylabel('frequency')
+    plt.xlabel('class_of_peak')
+    plt.title('Histogram of Height of Peak Values')
+    plt.show()
     return(df)
 
         #ylength = len(int_data)
@@ -180,22 +204,22 @@ def loop_per_row(df):
 def evaluate_peak(data):
     #to set time it would be the loc of max peak
     #note: this would only capture later peak if two or more equivalent peaks   deltas=[]
-    maxval = max(data)
-    print(maxval)
-    for i in range(0, len(data)):
-        if data[i] == maxval:
-            time_of_peak = i
-        else:
-            pass
+    #maxval = max(data)
+    #print(maxval)
+    #for i in range(0, len(data)):
+    #    if data[i] == maxval:
+    #        time_of_peak = i
+    #    else:
+    #        pass
     deltas = []
     for i in range(4, len(data)):
         delta = (data[i] - data[i - 5])
         deltas.append(delta)
     height_of_peak = max(deltas)
-    class_of_peak=height_of_peak * time_of_peak
+    class_of_peak = height_of_peak
     return (class_of_peak)
+
     # Note: use following line if doing linear reg
-    class_of_peak=time_of_peak
    # if time_of_peak <= (len(data))/5:
    #     class_of_peak=1
    # if time_of_peak > ((len(data))/5) and time_of_peak <= (((len(data))/5) *2):
@@ -206,9 +230,17 @@ def evaluate_peak(data):
    #     class_of_peak=4
    # if time_of_peak > (((len(data)) / 5) * 4) and time_of_peak <= (((len(data)) / 5) * 5):
    #     class_of_peak=5
-    return class_of_peak
+    #return class_of_peak
 
-
+def evaluate_time_peak(data):
+    maxval = max(data)
+    print(maxval)
+    for i in range(0, len(data)):
+        if data[i] == maxval:
+            time_of_peak = i
+        else:
+            pass
+    return time_of_peak
 
 def decision_tree(df):
     df1 = df.drop(columns=["data"])
