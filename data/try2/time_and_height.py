@@ -93,17 +93,16 @@ def nlogo_parse_chunk(chunk):
 
 def createdataframe(dataset):
     df =  pd.read_csv(dataset)
-    print(df)
     #use below for standard
     #df.columns = ['run','n', 'spread-type', 'simple-spread-chance', 'graph-type', 'ba-m', 'citizen-media-influence', 'citizen-citizen-influence', 'flint-community-size', 'data']
 
     #use below for gradual scalar
-    #df.columns = ['run', 'n', 'spread-type', 'simple-spread-chance', 'graph-type', 'ba-m', 'citizen-media-influence','citizen-citizen-influence', 'citizen-media-gradual-scalar','flint-community-size', 'data']
+    df.columns = ['run', 'n', 'spread-type', 'simple-spread-chance', 'graph-type', 'ba-m', 'citizen-media-influence','citizen-citizen-influence', 'citizen-media-gradual-scalar','flint-community-size', 'data']
     #print(df['simple-spread-chance'])
     #print(df['spread-type'])
     #df.drop(['spread-type'], axis=1)
     df_new=df.drop(columns=['spread-type', 'graph-type', 'n','run'])
-    print(df_new)
+    df_new['lr_test'] = np.random.randint(1, 100, df_new.shape[0])
     #print('after drop', df_new['spread-type'])
     #df_new.set_index('run', inplace=True)
     return df_new
@@ -159,7 +158,7 @@ def loop_per_row(df):
         df['citizen-citizen-influence']=df['citizen-citizen-influence'].astype(float)
         df['flint-community-size']=df['flint-community-size'].astype(float)
         #INCLUDE WHEN USING GRADUAL SCALAR
-        df['citizen-media-gradual-scalar'] = df['citizen-media-gradual-scalar'].astype(float)
+        #df['citizen-media-gradual-scalar'] = df['citizen-media-gradual-scalar'].astype(float)
     return(df)
 
         #ylength = len(int_data)
@@ -178,30 +177,36 @@ def loop_per_row(df):
     '''To only return class for one trial'''
         #return(class_of_peak)
 
-
-
-
 def evaluate_peak(data):
-    deltas=[]
-    for i in range(4, len(data)):
-        if (data[i] - data[i-5]) < 20:
-            class_of_peak = 1
-            deltas.append(class_of_peak)
-        elif (data[i] - data[i-5]) >= 20 and (data[i] - data[i-5]) < 40:
-            class_of_peak = 2
-            deltas.append(class_of_peak)
-        elif (data[i] - data[i - 5]) >= 40 and (data[i] - data[i - 5]) < 60:
-            class_of_peak = 3
-            deltas.append(class_of_peak)
-        elif (data[i] - data[i - 5]) >= 60 and (data[i] - data[i - 5]) < 100:
-            class_of_peak = 4
-            deltas.append(class_of_peak)
-        #elif (data[i] - data[i - 5]) >= 100 :
+    #to set time it would be the loc of max peak
+    #note: this would only capture later peak if two or more equivalent peaks   deltas=[]
+    maxval = max(data)
+    print(maxval)
+    for i in range(0, len(data)):
+        if data[i] == maxval:
+            time_of_peak = i
         else:
-            class_of_peak = 5
-            deltas.append(class_of_peak)
-    class_of_peak=max(deltas)
-    return(class_of_peak)
+            pass
+    deltas = []
+    for i in range(4, len(data)):
+        delta = (data[i] - data[i - 5])
+        deltas.append(delta)
+    height_of_peak = max(deltas)
+    class_of_peak=height_of_peak * time_of_peak
+    return (class_of_peak)
+    # Note: use following line if doing linear reg
+    class_of_peak=time_of_peak
+   # if time_of_peak <= (len(data))/5:
+   #     class_of_peak=1
+   # if time_of_peak > ((len(data))/5) and time_of_peak <= (((len(data))/5) *2):
+   #     class_of_peak=2
+   # if time_of_peak > (((len(data)) / 5)*2) and time_of_peak <= (((len(data)) / 5) * 3):
+   #     class_of_peak=3
+   # if time_of_peak > (((len(data)) / 5) * 3) and time_of_peak <= (((len(data)) / 5) * 4):
+   #     class_of_peak=4
+   # if time_of_peak > (((len(data)) / 5) * 4) and time_of_peak <= (((len(data)) / 5) * 5):
+   #     class_of_peak=5
+    return class_of_peak
 
 
 
@@ -226,7 +231,7 @@ def decision_tree(df):
     dot_data = tree.export_graphviz(clf, out_file=None, feature_names=water_feature_names, class_names=class_names,
                                     filled=True, rounded=True, special_characters=True)
     graph = graphviz.Source(dot_data)
-    graph.render("gradual based on peak height")
+    graph.render("time_and_height")
     dot_data = tree.export_graphviz(clf, out_file=None, feature_names = water_feature_names, class_names = class_names, filled = True, rounded = True, special_characters = True)
     #graph = graphviz.Source(dot_data)
     ###may need to convert other categories to floats- needs more work####
@@ -237,7 +242,7 @@ def linear_reg(df_with_class):
     #use below for initial results
     #X=df1[['simple-spread-chance', 'ba-m', 'citizen-media-influence', 'citizen-citizen-influence', 'flint-community-size']]
     #use below for gradual scalar
-    X = df1[['simple-spread-chance', 'ba-m', 'citizen-media-influence', 'citizen-citizen-influence','citizen-media-gradual-scalar','flint-community-size']]
+    X = df1[['simple-spread-chance', 'ba-m', 'citizen-media-influence', 'citizen-citizen-influence','citizen-media-gradual-scalar','flint-community-size', 'lr_test']]
     y = df1["class"]
     regr = linear_model.LinearRegression()
     regr.fit(X, y)
@@ -257,7 +262,7 @@ def linear_reg(df_with_class):
         #CHECK ASSUMPTIONS
 
 '''MAIN CODE FOR DECISION TREE'''
-def main_cart(dataset):
+def main_cart_belief(dataset):
     df_adj = createdataframe(dataset)
     #filtered_int, time = loop_per_row(df)
     #print(filtered_int, time)
@@ -276,9 +281,9 @@ def main_cart(dataset):
     #need to convert string to list of integers
 
 
-def main_linearreg(dataset):
+def main_linearreg_belief(dataset):
     df_adj = createdataframe(dataset)
     df_with_class = loop_per_row(df_adj)
     linear_reg(df_with_class)
 
-main_linearreg('gradual-trust-exp-results.csv')
+main_linearreg_belief('gradual-trust-exp-results.csv')

@@ -25,7 +25,6 @@ import statsmodels.api as sm
 from statsmodels.formula.api import ols
 
 
-
 '''
 NETLOGO PARSING
 '''
@@ -88,14 +87,10 @@ def nlogo_parse_chunk(chunk):
 
 
 
-
-
-
 def createdataframe(dataset):
-    df =  pd.read_csv(dataset)
-    print(df)
+    df =  pd.read_csv(dataset, sep='|' , engine='python')
     #use below for standard
-    #df.columns = ['run','n', 'spread-type', 'simple-spread-chance', 'graph-type', 'ba-m', 'citizen-media-influence', 'citizen-citizen-influence', 'flint-community-size', 'data']
+    df.columns = ['run','n', 'spread-type', 'simple-spread-chance', 'graph-type', 'ba-m', 'citizen-media-influence', 'citizen-citizen-influence', 'flint-community-size', 'data']
 
     #use below for gradual scalar
     #df.columns = ['run', 'n', 'spread-type', 'simple-spread-chance', 'graph-type', 'ba-m', 'citizen-media-influence','citizen-citizen-influence', 'citizen-media-gradual-scalar','flint-community-size', 'data']
@@ -103,7 +98,6 @@ def createdataframe(dataset):
     #print(df['spread-type'])
     #df.drop(['spread-type'], axis=1)
     df_new=df.drop(columns=['spread-type', 'graph-type', 'n','run'])
-    print(df_new)
     #print('after drop', df_new['spread-type'])
     #df_new.set_index('run', inplace=True)
     return df_new
@@ -159,7 +153,7 @@ def loop_per_row(df):
         df['citizen-citizen-influence']=df['citizen-citizen-influence'].astype(float)
         df['flint-community-size']=df['flint-community-size'].astype(float)
         #INCLUDE WHEN USING GRADUAL SCALAR
-        df['citizen-media-gradual-scalar'] = df['citizen-media-gradual-scalar'].astype(float)
+        #df['citizen-media-gradual-scalar'] = df['citizen-media-gradual-scalar'].astype(float)
     return(df)
 
         #ylength = len(int_data)
@@ -212,32 +206,69 @@ def decision_tree(df):
     y.to_numpy()
     df1=df1.drop(columns=['class'])
     df1 = df1.reset_index(drop=True)
-    #water_feature_names= ['simple-spread-chance', 'ba-m', 'citizen-media-influence', 'citizen-citizen-influence', 'flint-community-size']
-    water_feature_names = ['simple-spread-chance', 'ba-m', 'citizen-media-influence', 'citizen-citizen-influence', 'citizen-media-gradual-scalar','flint-community-size']
+    water_feature_names= ['simple-spread-chance', 'ba-m', 'citizen-media-influence', 'citizen-citizen-influence', 'flint-community-size']
+    #water_feature_names = ['simple-spread-chance', 'ba-m', 'citizen-media-influence', 'citizen-citizen-influence', 'citizen-media-gradual-scalar','flint-community-size']
     X=df1.to_numpy()
+    from sklearn.model_selection import train_test_split
+    # this function randomly split the data into train and test sets
+    x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=.2)
+    # test_size=.3 means that our test set will be 30% of the train set.
     class_names= ['1','2','3','4','5']
     print(X)
     print(y)
-    y.to_numpy()
-    clf = tree.DecisionTreeClassifier()
-    clf = clf.fit(X, y)
-    tree.plot_tree(clf)
+    #clf = tree.DecisionTreeClassifier()
+    #clf = clf.fit(X, y)
+    #dtree = tree.DecisionTreeClassifier()
+    #dtree.fit(x_train, y_train)  # train parameters: features and target
+    #pred = dtree.predict(x_test)
+    from sklearn.metrics import accuracy_score
+    #print(accuracy_score(y_test, pred))
+    #tree.plot_tree(clf)
     #dot_data = tree.export_graphviz(clf, out_file=None, feature_names=water_feature_names, class_names=class_names, filled)
-    dot_data = tree.export_graphviz(clf, out_file=None, feature_names=water_feature_names, class_names=class_names,
-                                    filled=True, rounded=True, special_characters=True)
-    graph = graphviz.Source(dot_data)
-    graph.render("gradual based on peak height")
-    dot_data = tree.export_graphviz(clf, out_file=None, feature_names = water_feature_names, class_names = class_names, filled = True, rounded = True, special_characters = True)
+    #dot_data = tree.export_graphviz(clf, out_file=None, feature_names=water_feature_names, class_names=class_names,
+    #                                filled=True, rounded=True, special_characters=True)
+    #graph = graphviz.Source(dot_data)
+    #graph.render("with test set")
+    #dot_data = tree.export_graphviz(clf, out_file=None, feature_names = water_feature_names, class_names = class_names, filled = True, rounded = True, special_characters = True)
     #graph = graphviz.Source(dot_data)
     ###may need to convert other categories to floats- needs more work####
+
+
+    '''This is to make the figure with changing parameters to find best pruning'''
+    max_depth = []
+    acc_gini = []
+    acc_entropy = []
+    for i in range(1, 30):
+        dtree = tree.DecisionTreeClassifier(criterion='gini', max_depth = i)
+        dtree.fit(x_train, y_train)
+        pred = dtree.predict(x_test)
+        acc_gini.append(accuracy_score(y_test, pred))
+        ####
+        dtree = tree.DecisionTreeClassifier(criterion='entropy', max_depth = i)
+        dtree.fit(x_train, y_train)
+        pred = dtree.predict(x_test)
+        acc_entropy.append(accuracy_score(y_test, pred))
+        ####
+        max_depth.append(i)
+    d = pd.DataFrame({'acc_gini':pd.Series(acc_gini),'acc_entropy':pd.Series(acc_entropy),'max_depth':pd.Series(max_depth)})
+    # visualizing changes in parameters
+    plt.plot('max_depth', 'acc_gini', data = d, label ="gini")
+    plt.plot('max_depth', 'acc_entropy', data = d, label ='entropy')
+    plt.xlabel('max_depth')
+    plt.ylabel('accuracy')
+    plt.legend()
+    plt.show()
+
+
+
 
 def linear_reg(df_with_class):
     df1 = df_with_class.drop(columns=["data"])
     df1['class'] = df1['class'].astype(float)
     #use below for initial results
-    #X=df1[['simple-spread-chance', 'ba-m', 'citizen-media-influence', 'citizen-citizen-influence', 'flint-community-size']]
+    X=df1[['simple-spread-chance', 'ba-m', 'citizen-media-influence', 'citizen-citizen-influence', 'flint-community-size']]
     #use below for gradual scalar
-    X = df1[['simple-spread-chance', 'ba-m', 'citizen-media-influence', 'citizen-citizen-influence','citizen-media-gradual-scalar','flint-community-size']]
+    #X = df1[['simple-spread-chance', 'ba-m', 'citizen-media-influence', 'citizen-citizen-influence','citizen-media-gradual-scalar','flint-community-size']]
     y = df1["class"]
     regr = linear_model.LinearRegression()
     regr.fit(X, y)
@@ -257,7 +288,7 @@ def linear_reg(df_with_class):
         #CHECK ASSUMPTIONS
 
 '''MAIN CODE FOR DECISION TREE'''
-def main_cart(dataset):
+def main_cart_belief(dataset):
     df_adj = createdataframe(dataset)
     #filtered_int, time = loop_per_row(df)
     #print(filtered_int, time)
@@ -266,19 +297,12 @@ def main_cart(dataset):
 
     '''tO GET CLASSES, USE CODE BELOW:'''
     df_with_class=loop_per_row(df_adj)
-    #(df_with_class)
     decision_tree(df_with_class)
 
 
-    #plt.plot(time, int_data)
-    #plt.plot(time, filtered_int)
-    #plt.show()
-    #need to convert string to list of integers
-
-
-def main_linearreg(dataset):
+def main_linearreg_belief(dataset):
     df_adj = createdataframe(dataset)
     df_with_class = loop_per_row(df_adj)
     linear_reg(df_with_class)
 
-main_linearreg('gradual-trust-exp-results.csv')
+main_cart_belief('belief-spread-exp-results.csv')
