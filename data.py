@@ -239,7 +239,7 @@ FILE I/O
 
 DATA_DIR = 'D:/school/grad-school/Tufts/research/flint-media-model'
 
-def save_graph(path, cit, cit_social, media, media_sub):
+def save_graph(path, cit, cit_social, media, media_sub, flint_citizens):
     cit_arr = nlogo_list_to_arr(nlogo_replace_agents(cit, [ 'citizen' ]))
     cit_social_arr = nlogo_list_to_arr(nlogo_replace_agents(cit_social, [ 'citizen' ]))
     media_arr = nlogo_list_to_arr(nlogo_replace_agents(media, [ 'media' ]))
@@ -248,7 +248,8 @@ def save_graph(path, cit, cit_social, media, media_sub):
     f = open(path, 'w')
     f.write(f'CITIZENS {len(cit_arr)-1}\n')
     for c in filter(lambda el: len(el) > 1, cit_arr):
-        f.write(f'{c[0].replace("citizen_","")},{c[1]}\n')
+      cit_id = c[0].replace("citizen_","")
+      f.write(f'{cit_id},{c[1]},{int(cit_id) in flint_citizens}\n')
 
     f.write(f'CITIZEN_SOCIAL_LINKS {len(cit_social_arr)-1}\n')
     for c in filter(lambda el: len(el) > 1, cit_social_arr):
@@ -1017,13 +1018,14 @@ def get_all_multidata(param_combos, plots, path):
   return (multi_datas, props, model_params)
 
 def process_belief_spread_exp_results(path):
-  simple_spread_chance = [ '0.1', '0.25', '0.5' ]
-  ba_m = ['3','10','25']
-  cit_media_influence = ['0.01','0.1','0.5']
-  cit_cit_influence = ['0.01','0.1','0.5']
+  simple_spread_chance = [ '0.01', '0.05', '0.1', '0.25', '0.5', '0.75' ]
+  ba_m = ['3','10']
+  cit_media_influence = [ '0.01', '0.05', '0.1', '0.25', '0.5', '0.75' ]
+  cit_cit_influence = [ '0.01', '0.05', '0.1', '0.25', '0.5', '0.75' ]
+  repetition = ['0','1','2','3']
 
   process_exp_outputs(
-    [simple_spread_chance,ba_m,cit_media_influence,cit_cit_influence],
+    [simple_spread_chance,ba_m,cit_media_influence,cit_cit_influence,repetition],
     {'percent-agent-beliefs': [PLOT_TYPES.LINE, PLOT_TYPES.STACK],
     'new-beliefs': [PLOT_TYPES.LINE]},
     path)
