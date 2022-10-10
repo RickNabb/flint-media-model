@@ -860,9 +860,14 @@ to read-graph
   create-citizens (length citizenz) [
     let c (item i citizenz)
     let id item 0 c
-    let a item 1 c
+    let a read-from-string (item 1 c)
     set is-flint? read-from-string (item 2 c)
-    set brain create-agent-brain id citizen-priors citizen-malleables [] (list a)
+
+    ifelse a = -1 [
+      set brain create-agent-brain id citizen-priors [] [] []
+    ] [
+      set brain create-agent-brain id citizen-priors citizen-malleables [] (list a)
+    ]
     set messages-heard []
     set messages-believed []
 
@@ -875,8 +880,14 @@ to read-graph
   create-medias (length mediaz) [
     let m (item i mediaz)
     let id item 0 m
-    let a item 1 m
-    set brain create-agent-brain (id) citizen-priors citizen-malleables [] (list a)
+    let a read-from-string (item 1 m)
+
+    ifelse a = -1 [
+      set brain create-agent-brain id citizen-priors [] [] []
+    ] [
+      set brain create-agent-brain id citizen-priors citizen-malleables [] (list a)
+    ]
+
     set messages-heard []
     set messages-believed []
 
@@ -894,7 +905,10 @@ to read-graph
   foreach media-subs [ sub ->
     let c read-from-string (item 0 sub)
     let m read-from-string (item 1 sub)
-    ask media m [ create-subscriber-to citizen c [ set weight media-citizen-influence ] ]
+    ask media m [
+      create-subscriber-to citizen c [ set weight media-citizen-influence ]
+      create-subscriber-from citizen c [ set weight citizen-media-influence ]
+    ]
   ]
 end
 
