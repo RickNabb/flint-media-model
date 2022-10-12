@@ -35,6 +35,7 @@ globals [
 
   ;; For experiments
   contagion-dir
+  behavior-rand
 
   ;; Agents who believed at t-1
   num-agents-adopted
@@ -840,7 +841,8 @@ to save-graph
   let cit-social [[self] of both-ends] of social-friends
   let media-ip ([(list self (dict-value brain "A"))] of medias)
   let media-sub [[self] of both-ends] of subscribers
-  py:run (word "save_graph('" save-graph-path "','" cit-ip "','" cit-social "','" media-ip "','" media-sub "')")
+  let flint-citizens list-as-py-array ([ (dict-value brain "ID") ] of citizens with [is-flint?]) false
+  py:run (word "save_graph('" save-graph-path "','" cit-ip "','" cit-social "','" media-ip "','" media-sub "'," flint-citizens ")")
 end
 
 ;; Read a graph back in from a data file (specified by the load-graph-path variable in the interface) and
@@ -853,22 +855,61 @@ to read-graph
   let media-subs item 3 graph
 
   ;; id, a
-  foreach citizenz [ c ->
+  ;; TODO: Change this from being hard-coded for one belief "A" to being general
+  let i 0
+  create-citizens (length citizenz) [
+    let c (item i citizenz)
     let id item 0 c
-    let a item 1 c
-    create-citizen id [] (list a)
+    let a read-from-string (item 1 c)
+    set is-flint? read-from-string (item 2 c)
+
+    ifelse a = -1 [
+      set brain create-agent-brain id citizen-priors [] [] []
+    ] [
+      set brain create-agent-brain id citizen-priors citizen-malleables [] (list a)
+    ]
+    set messages-heard []
+    set messages-believed []
+
+    set size 0.5
+    setxy random-xcor random-ycor
+    set i i + 1
   ]
 
-  ;; Fudging this for the time-being since we're creating the same media every time
-  create-media
+  set i 0
+  create-medias (length mediaz) [
+    let m (item i mediaz)
+    let id item 0 m
+    let a read-from-string (item 1 m)
+
+    ifelse a = -1 [
+      set brain create-agent-brain id citizen-priors [] [] []
+    ] [
+      set brain create-agent-brain id citizen-priors citizen-malleables [] (list a)
+    ]
+
+    set messages-heard []
+    set messages-believed []
+
+    setxy random-xcor random-ycor
+    set color green
+    set i i + 1
+  ]
+
   foreach citizens-conns [ c ->
     let c1 read-from-string (item 0 c)
     let c2 read-from-string (item 1 c)
     ask citizen c1 [ create-social-friend-to citizen c2 [ set weight citizen-citizen-influence ] ]
   ]
 
-  ;; Fudging media connections too since epsilon may not want to change between runs
-  connect-media
+  foreach media-subs [ sub ->
+    let c read-from-string (item 0 sub)
+    let m read-from-string (item 1 sub)
+    ask media m [
+      create-subscriber-to citizen c [ set weight media-citizen-influence ]
+      create-subscriber-from citizen c [ set weight citizen-media-influence ]
+    ]
+  ]
 end
 
 ;;;;;;;;;;;;;
@@ -1746,7 +1787,7 @@ N
 N
 0
 10000
-500.0
+300.0
 10
 1
 NIL
@@ -1839,7 +1880,7 @@ SWITCH
 488
 load-graph?
 load-graph?
-1
+0
 1
 -1000
 
@@ -1849,7 +1890,7 @@ INPUTBOX
 242
 555
 load-graph-path
-./exp1-graph.csv
+D:/school/grad-school/Tufts/research/flint-media-model/simulation-data/07-Oct-2022-influence-model-sweep/graphs/0.75-3-0.75-0.75-4.csv
 1
 0
 String
@@ -1860,7 +1901,7 @@ INPUTBOX
 244
 622
 save-graph-path
-./exp1-graph.csv
+D:/school/grad-school/Tufts/research/flint-media-model/simulation-data/07-Oct-2022-influence-model-sweep/graphs/0.75-3-0.75-0.75-4.csv
 1
 0
 String
@@ -1901,7 +1942,7 @@ simple-spread-chance
 simple-spread-chance
 0
 1
-0.1
+0.75
 0.01
 1
 NIL
@@ -1941,7 +1982,7 @@ tick-end
 tick-end
 30
 1000
-300.0
+200.0
 1
 1
 NIL
@@ -2231,7 +2272,7 @@ citizen-citizen-influence
 citizen-citizen-influence
 0
 1
-0.5
+0.75
 0.01
 1
 NIL
@@ -2246,7 +2287,7 @@ citizen-media-influence
 citizen-media-influence
 0
 1
-0.5
+0.75
 0.01
 1
 NIL
@@ -2317,7 +2358,7 @@ SWITCH
 348
 dynamic-cit-media-influence?
 dynamic-cit-media-influence?
-0
+1
 1
 -1000
 
@@ -2384,7 +2425,7 @@ CHOOSER
 flint-organizing-strategy
 flint-organizing-strategy
 "high-degree-media" "high-degree-citizens" "neighbors-of-neighbors" "high-degree-cit-and-media"
-0
+3
 
 SLIDER
 29
@@ -2444,7 +2485,7 @@ SWITCH
 391
 dynamic-cit-cit-influence?
 dynamic-cit-cit-influence?
-0
+1
 1
 -1000
 
@@ -2483,6 +2524,21 @@ media-monitor-peers?
 1
 1
 -1000
+
+SLIDER
+209
+175
+382
+209
+repetition
+repetition
+0
+50
+4.0
+1
+1
+NIL
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
@@ -2849,20 +2905,46 @@ NetLogo 6.1.1
       <value value="&quot;mag&quot;"/>
     </enumeratedValueSet>
   </experiment>
-  <experiment name="belief-spread-exp" repetitions="30" sequentialRunOrder="false" runMetricsEveryStep="false">
+  <experiment name="belief-spread-exp" repetitions="5" runMetricsEveryStep="false">
     <setup>setup
-set-cognitive-contagion-params
-let run-dir (word sim-output-dir substring date-time-safe 11 (length date-time-safe) "-" belief-resolution)
-set contagion-dir (word run-dir "/" simple-spread-chance "/" ba-m "/" citizen-media-influence "/" citizen-citizen-influence)
-py:run (word "create_nested_dirs('" contagion-dir "')")</setup>
+let run-dir (word sim-output-dir substring date-time-safe 11 (length date-time-safe) "-influence-model-sweep")
+let graphs-path (word run-dir "/graphs")
+let graph-file (word graphs-path "/" simple-spread-chance "-" ba-m "-" citizen-media-influence "-" citizen-citizen-influence "-" repetition ".csv")
+ifelse (py:runresult (word "os.path.isfile('" graph-file "')")) [
+  set load-graph? true
+  set load-graph-path graph-file
+  setup
+] [
+  set load-graph? false
+  set save-graph-path graph-file
+  py:run (word "create_nested_dirs('" graphs-path "')")
+  setup
+  save-graph
+]
+
+set contagion-dir (word run-dir "/" simple-spread-chance "/" ba-m "/" citizen-media-influence "/" citizen-citizen-influence "/" repetition)
+py:run (word "create_nested_dirs('" contagion-dir "')")
+set behavior-rand random 10000</setup>
     <go>go</go>
-    <final>let rand random 10000
-export-world (word contagion-dir "/" rand "_world.csv")
-export-plot "percent-agent-beliefs" (word contagion-dir "/" rand "_percent-agent-beliefs.csv")
-export-plot "num-new-beliefs" (word contagion-dir "/" rand "_new-beliefs.csv")</final>
+    <final>export-world (word contagion-dir "/" behavior-rand "_world.csv")
+export-plot "percent-agent-beliefs" (word contagion-dir "/" behavior-rand "_percent-agent-beliefs.csv")
+export-plot "num-new-beliefs" (word contagion-dir "/" behavior-rand "_new-beliefs.csv")</final>
+    <timeLimit steps="200"/>
     <metric>count citizens</metric>
     <enumeratedValueSet variable="contagion-on?">
       <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="dynamic-cit-cit-influence?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="dynamic-cit-media-influence?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="media-monitor-peers?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="flint-organizing?">
+      <value value="false"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="load-graph?">
       <value value="false"/>
@@ -2877,17 +2959,21 @@ export-plot "num-new-beliefs" (word contagion-dir "/" rand "_new-beliefs.csv")</
       <value value="&quot;discrete&quot;"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="N">
-      <value value="1000"/>
+      <value value="300"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="tick-end">
-      <value value="500"/>
+      <value value="200"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="spread-type">
       <value value="&quot;simple&quot;"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="simple-spread-chance">
+      <value value="0.01"/>
+      <value value="0.05"/>
+      <value value="0.1"/>
       <value value="0.25"/>
       <value value="0.5"/>
+      <value value="0.75"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="graph-type">
       <value value="&quot;barabasi-albert&quot;"/>
@@ -2895,23 +2981,30 @@ export-plot "num-new-beliefs" (word contagion-dir "/" rand "_new-beliefs.csv")</
     <enumeratedValueSet variable="ba-m">
       <value value="3"/>
       <value value="10"/>
-      <value value="25"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="epsilon">
       <value value="0"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="citizen-media-influence">
       <value value="0.01"/>
+      <value value="0.05"/>
       <value value="0.1"/>
+      <value value="0.25"/>
       <value value="0.5"/>
+      <value value="0.75"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="citizen-citizen-influence">
+      <value value="0.01"/>
+      <value value="0.05"/>
       <value value="0.1"/>
+      <value value="0.25"/>
       <value value="0.5"/>
+      <value value="0.75"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="flint-community-size">
       <value value="0.005"/>
     </enumeratedValueSet>
+    <steppedValueSet variable="repetition" first="0" step="1" last="4"/>
   </experiment>
   <experiment name="low-trust-connectivity-test" repetitions="30" sequentialRunOrder="false" runMetricsEveryStep="false">
     <setup>setup
@@ -3171,7 +3264,7 @@ export-plot "num-new-beliefs" (word contagion-dir "/" rand "_new-beliefs.csv")</
       <value value="0.005"/>
     </enumeratedValueSet>
   </experiment>
-  <experiment name="dynamic-organizing-test" repetitions="30" sequentialRunOrder="false" runMetricsEveryStep="false">
+  <experiment name="dynamic-organizing-test" repetitions="10" sequentialRunOrder="false" runMetricsEveryStep="false">
     <setup>setup
 set-cognitive-contagion-params
 let run-dir (word sim-output-dir substring date-time-safe 11 (length date-time-safe) "-dynamic-organizing")
@@ -3182,7 +3275,7 @@ py:run (word "create_nested_dirs('" contagion-dir "')")</setup>
 export-world (word contagion-dir "/" rand "_world.csv")
 export-plot "percent-agent-beliefs" (word contagion-dir "/" rand "_percent-agent-beliefs.csv")
 export-plot "num-new-beliefs" (word contagion-dir "/" rand "_new-beliefs.csv")</final>
-    <timeLimit steps="500"/>
+    <timeLimit steps="300"/>
     <metric>count citizens</metric>
     <enumeratedValueSet variable="contagion-on?">
       <value value="true"/>
@@ -3196,6 +3289,9 @@ export-plot "num-new-beliefs" (word contagion-dir "/" rand "_new-beliefs.csv")</
     <enumeratedValueSet variable="belief-resolution">
       <value value="7"/>
     </enumeratedValueSet>
+    <enumeratedValueSet variable="media-monitor-peers?">
+      <value value="false"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="brain-type">
       <value value="&quot;discrete&quot;"/>
     </enumeratedValueSet>
@@ -3203,7 +3299,7 @@ export-plot "num-new-beliefs" (word contagion-dir "/" rand "_new-beliefs.csv")</
       <value value="500"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="tick-end">
-      <value value="500"/>
+      <value value="300"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="spread-type">
       <value value="&quot;simple&quot;"/>
@@ -3340,6 +3436,9 @@ export-plot "num-new-beliefs" (word contagion-dir "/" rand "_new-beliefs.csv")</
     </enumeratedValueSet>
     <enumeratedValueSet variable="belief-resolution">
       <value value="7"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="media-monitor-peers?">
+      <value value="false"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="brain-type">
       <value value="&quot;discrete&quot;"/>
