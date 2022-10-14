@@ -1017,12 +1017,25 @@ def get_all_multidata(param_combos, plots, path):
       multi_datas[(combo,plot_name)] = multi_data
   return (multi_datas, props, model_params)
 
+def process_belief_spread_exp_test_results(path):
+  simple_spread_chance = [ '0.5' ]
+  ba_m = ['3']
+  cit_media_influence = [ '0.01']
+  cit_cit_influence = [ '0.01']
+  repetition = ['0','1','2','3']
+
+  process_exp_outputs(
+    [simple_spread_chance,ba_m,cit_media_influence,cit_cit_influence,repetition],
+    {'percent-agent-beliefs': [PLOT_TYPES.LINE, PLOT_TYPES.STACK],
+    'new-beliefs': [PLOT_TYPES.LINE]},
+    path)
+
 def process_belief_spread_exp_results(path):
   simple_spread_chance = [ '0.01', '0.05', '0.1', '0.25', '0.5', '0.75' ]
   ba_m = ['3','10']
   cit_media_influence = [ '0.01', '0.05', '0.1', '0.25', '0.5', '0.75' ]
   cit_cit_influence = [ '0.01', '0.05', '0.1', '0.25', '0.5', '0.75' ]
-  repetition = ['0','1','2','3']
+  repetition = ['0','1','2','3','4']
 
   process_exp_outputs(
     [simple_spread_chance,ba_m,cit_media_influence,cit_cit_influence,repetition],
@@ -1038,17 +1051,18 @@ def belief_spread_exp_results_df(path):
 
   :path: The string path to the raw data files.
   '''
-  simple_spread_chance = [ '0.1', '0.25', '0.5' ]
-  ba_m = ['3','10','25']
-  cit_media_influence = ['0.01','0.1','0.5']
-  cit_cit_influence = ['0.01','0.1','0.5']
+  simple_spread_chance = [ '0.01', '0.05', '0.1', '0.25', '0.5', '0.75' ]
+  ba_m = ['3','10']
+  cit_media_influence = [ '0.01', '0.05', '0.1', '0.25', '0.5', '0.75' ]
+  cit_cit_influence = [ '0.01', '0.05', '0.1', '0.25', '0.5', '0.75' ]
+  repetition = ['0','1','2','3','4']
 
   measures = ['new-beliefs']
-  df_columns = { "new-beliefs": ['n','spread-type','simple-spread-chance','graph-type','ba-m','citizen-media-influence','citizen-citizen-influence','flint-community-size'] }
-  multidata_key_params = ['simple-spread-chance','ba-m','citizen-media-influence','citizen-citizen-influence']
+  df_columns = { "new-beliefs": ['n','spread-type','simple-spread-chance','graph-type','ba-m','citizen-media-influence','citizen-citizen-influence','flint-community-size','repetition'] }
+  multidata_key_params = ['simple-spread-chance','ba-m','citizen-media-influence','citizen-citizen-influence','repetition']
 
   (multidata, props, params) = get_all_multidata(
-    [simple_spread_chance,ba_m,cit_media_influence,cit_cit_influence],
+    [simple_spread_chance,ba_m,cit_media_influence,cit_cit_influence,repetition],
     {'new-beliefs': [PLOT_TYPES.LINE]},
     path)
   return multidata_to_dataframes(measures, df_columns, multidata, multidata_key_params, props, params)
