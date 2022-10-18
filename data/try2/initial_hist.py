@@ -104,7 +104,7 @@ def createdataframe(dataset):
     #print(df['simple-spread-chance'])
     #print(df['spread-type'])
     #df.drop(['spread-type'], axis=1)
-    df_new=df.drop(columns=['spread-type', 'graph-type', 'n','run'])
+    df_new=df.drop(columns=['spread-type', 'graph-type', 'n','run', 'repetition', 'flint-community-size'])
     #print('after drop', df_new['spread-type'])
     #df_new.set_index('run', inplace=True)
     print(df_new)
@@ -160,10 +160,10 @@ def loop_per_row(df):
         class_of_peak = evaluate_peak_time(int_data)
         df.at[i,'class'] = class_of_peak
         df['simple-spread-chance'] = df['simple-spread-chance'].astype(float)
-        #df['simple-spread-chance'] = df['simple-spread-chance'].astype(float)
-        #df['ba-m'] = df['ba-m'].astype(float)
-        #df['citizen-media-influence'] = df['citizen-media-influence'].astype(float)
-        #df['citizen-citizen-influence'] = df['citizen-citizen-influence'].astype(float)
+        df['simple-spread-chance'] = df['simple-spread-chance'].astype(float)
+        df['ba-m'] = df['ba-m'].astype(float)
+        df['citizen-media-influence'] = df['citizen-media-influence'].astype(float)
+        df['citizen-citizen-influence'] = df['citizen-citizen-influence'].astype(float)
         #df['flint-community-size'] = df['flint-community-size'].astype(float)
 
         #INCLUDE WHEN USING GRADUAL SCALAR
@@ -265,7 +265,7 @@ def linear_reg(df_with_class):
     df1 = df_with_class.drop(columns=["data"])
     df1['class'] = df1['class'].astype(float)
     #use below for initial results
-    X=df1[['simple-spread-chance', 'ba-m', 'citizen-media-influence', 'citizen-citizen-influence', 'flint-community-size']]
+    X=df1[['simple-spread-chance', 'ba-m', 'citizen-media-influence', 'citizen-citizen-influence']]
     #use below for gradual scalar
     #X = df1[['simple-spread-chance', 'ba-m', 'citizen-media-influence', 'citizen-citizen-influence','citizen-media-gradual-scalar','flint-community-size']]
     y = df1["class"]
@@ -340,4 +340,4 @@ def make_histograms(dataset):
 
 
 
-make_histograms('influence-model-sweep.csv')
+main_linearreg_belief('influence-model-sweep.csv')
