@@ -93,11 +93,11 @@ def nlogo_parse_chunk(chunk):
 
 def createdataframe(dataset):
     #for standard
-    df =  pd.read_csv(dataset, sep='|' , engine='python')
+    #df =  pd.read_csv(dataset, sep='|' , engine='python')
     #for gradual
-    #df = pd.read_csv(dataset)
+    df = pd.read_csv(dataset)
     #use below for standard
-    df.columns = ['run','n', 'spread-type', 'simple-spread-chance', 'graph-type', 'ba-m', 'citizen-media-influence', 'citizen-citizen-influence', 'flint-community-size', 'data']
+    df.columns = ['run','n', 'spread-type', 'simple-spread-chance', 'graph-type', 'ba-m', 'citizen-media-influence', 'citizen-citizen-influence', 'flint-community-size', 'repetition','data']
 
     #use below for gradual scalar
     #df.columns = ['run', 'n', 'spread-type', 'simple-spread-chance', 'graph-type', 'ba-m', 'citizen-media-influence','citizen-citizen-influence', 'citizen-media-gradual-scalar','flint-community-size', 'data']
@@ -156,7 +156,7 @@ def loop_per_row(df):
         #for cart use below
         #class_of_peak = evaluate_peak(int_data)
         #for lr use below
-        class_of_peak = evaluate_peak_lr(int_data)
+        class_of_peak = evaluate_peak_time(int_data)
         df.at[i,'class'] = class_of_peak
         df['simple-spread-chance']=df['simple-spread-chance'].astype(float)
         df['ba-m'] = df['ba-m'].astype(float)
@@ -215,6 +215,21 @@ def evaluate_peak_lr(data):
         deltas.append(delta)
     class_of_peak=max(deltas)
     return(class_of_peak)
+
+def evaluate_peak_time(data):
+    #to set time it would be the loc of max peak
+    #note: this would only capture later peak if two or more equivalent peaks
+    deltas=[]
+    maxval = max(data)
+    #print(maxval)
+    for i in range(0, len(data)):
+        if data[i] == maxval:
+            time_of_peak = i
+        else:
+            pass
+    # Note: use following line if doing linear reg
+    class_of_peak=time_of_peak
+    return class_of_peak
 
 
 def decision_tree(df):
@@ -284,11 +299,17 @@ def main_linearreg_belief(dataset):
 def make_histograms(dataset):
     df_adj=createdataframe(dataset)
     df_with_class = loop_per_row(df_adj)
-    print(df_with_class)
+    #print(df_with_class)
+    #histogram 1: total height of peak in all runs
+    plt.hist(df_with_class['class'], bins= 100)
+    plt.xlabel('Time of max peak')
+    plt.ylabel('Frequency')
+    plt.title('Maximum peak time for all runs')
+    plt.show()
     #histogram 1: p = 0
         #plot based on height of peak
         #plot based on time of peak
     #histogram 2: p=1
 
-make_histograms('belief-spread-exp-results.csv')
+make_histograms('influence-model-sweep.csv')
 

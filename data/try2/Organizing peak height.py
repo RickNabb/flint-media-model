@@ -156,7 +156,7 @@ def loop_per_row(df):
         #for cart use below
         #class_of_peak = evaluate_peak(int_data)
         #for lr use below
-        class_of_peak = evaluate_peak_lr(int_data)
+        class_of_peak = evaluate_peak_time(int_data)
         df.at[i,'class'] = class_of_peak
         df['simple-spread-chance']=df['simple-spread-chance'].astype(float)
         df['ba-m'] = df['ba-m'].astype(float)
@@ -286,6 +286,21 @@ def main_cart_belief(dataset):
     #plt.plot(time, filtered_int)
     #plt.show()
     #need to convert string to list of integers
+
+def evaluate_peak_time(data):
+    #to set time it would be the loc of max peak
+    #note: this would only capture later peak if two or more equivalent peaks
+    deltas=[]
+    maxval = max(data)
+    print(maxval)
+    for i in range(0, len(data)):
+        if data[i] == maxval:
+            time_of_peak = i
+        else:
+            pass
+    # Note: use following line if doing linear reg
+    class_of_peak=time_of_peak
+    return class_of_peak
 
 
 def main_linearreg_belief(dataset):
