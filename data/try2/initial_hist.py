@@ -332,10 +332,10 @@ def make_histograms(dataset):
     df_adj = createdataframe(dataset)
     df_with_class = loop_per_row(df_adj)
     class_var = df_with_class['class']
-    sns.boxplot(data=df_with_class, x='citizen-citizen-influence', y='class')
+    sns.boxplot(data=df_with_class, x='citizen-media-influence', y='class', hue='simple-spread-chance')
     plt.xlabel('citizen-citizen-influence')
     plt.ylabel('Height of Max Peak')
-    plt.title('Peak Height as citizen-citizen-influence Changes')
+    plt.title('Peak Height as citizen-media-influence and spread-chance Change')
     plt.show()
 
 
