@@ -157,7 +157,7 @@ def loop_per_row(df):
         #class_of_peak = evaluate_peak(int_data)
 
         #for lr use below
-        class_of_peak = evaluate_peak_time(int_data)
+        class_of_peak = evaluate_peak_lr(int_data)
         df.at[i,'class'] = class_of_peak
         df['simple-spread-chance'] = df['simple-spread-chance'].astype(float)
         #df['simple-spread-chance'] = df['simple-spread-chance'].astype(float)
@@ -332,10 +332,10 @@ def make_histograms(dataset):
     df_adj = createdataframe(dataset)
     df_with_class = loop_per_row(df_adj)
     class_var = df_with_class['class']
-    sns.boxplot(data=df_with_class, x='simple-spread-chance', y='class')
-    plt.xlabel('Simple Spread Chance')
-    plt.ylabel('Time of Max Peak')
-    plt.title('Peak Time as simple-spread-chance Changes')
+    sns.boxplot(data=df_with_class, x='citizen-citizen-influence', y='class')
+    plt.xlabel('citizen-citizen-influence')
+    plt.ylabel('Height of Max Peak')
+    plt.title('Peak Height as citizen-citizen-influence Changes')
     plt.show()
 
 
