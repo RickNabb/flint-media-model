@@ -315,13 +315,13 @@ def make_histograms(dataset):
     #histogram 1: p = 0.01
     df_adj = createdataframe(dataset)
     df_with_class=loop_per_row(df_adj)
-    df_set_p = df_with_class.loc[df_with_class['simple-spread-chance'] == 0.75]
+    df_set_p = df_with_class.loc[df_with_class['simple-spread-chance'] == 0.01]
     print('edit p', df_set_p)
     class_var=df_with_class['class']
-    plt.hist(class_var, bins= 10)
+    plt.hist(class_var, bins= 100)
     plt.xlabel('Height of max peak')
     plt.ylabel('Frequency')
-    plt.title('Maximum peak Height where simple-spread-chance = 0.75')
+    plt.title('Maximum peak Height where simple-spread-chance = 0.01')
     plt.show()
         #plot based on height of peak
         #plot based on time of peak
