@@ -157,7 +157,7 @@ def loop_per_row(df):
         #class_of_peak = evaluate_peak(int_data)
 
         #for lr use below
-        class_of_peak = evaluate_peak_lr(int_data)
+        class_of_peak = evaluate_peak_time(int_data)
         df.at[i,'class'] = class_of_peak
         df['simple-spread-chance'] = df['simple-spread-chance'].astype(float)
         #df['simple-spread-chance'] = df['simple-spread-chance'].astype(float)
@@ -313,19 +313,31 @@ def make_histograms(dataset):
 
 
     #histogram 1: p = 0.01
-    df_adj = createdataframe(dataset)
-    df_with_class=loop_per_row(df_adj)
-    df_set_p = df_with_class.loc[df_with_class['simple-spread-chance'] == 0.75]
-    print('edit p', df_set_p)
-    class_var=df_set_p['class']
-    plt.hist(class_var, bins= 100)
-    plt.xlabel('Height of max peak')
-    plt.ylabel('Frequency')
-    plt.title('Maximum peak Height where simple-spread-chance = 0.75')
-    plt.show()
+    #df_adj = createdataframe(dataset)
+    #df_with_class=loop_per_row(df_adj)
+    #df_set_p = df_with_class.loc[df_with_class['simple-spread-chance'] == 0.75]
+    #print('edit p', df_set_p)
+    #class_var=df_set_p['class']
+    #plt.hist(class_var, bins= 100)
+    #plt.xlabel('Height of max peak')
+    #plt.ylabel('Frequency')
+    #plt.title('Maximum peak Height where simple-spread-chance = 0.75')
+    #plt.show()
         #plot based on height of peak
         #plot based on time of peak
-    #histogram 2: p=1
+
+
+
+    #figure 2: as p changes
+    df_adj = createdataframe(dataset)
+    df_with_class = loop_per_row(df_adj)
+    class_var = df_with_class['class']
+    sns.boxplot(data=df_with_class, x='simple-spread-chance', y='class')
+    plt.xlabel('Simple Spread Chance')
+    plt.ylabel('Time of Max Peak')
+    plt.title('Peak Time as simple-spread-chance Changes')
+    plt.show()
+
+
 
 make_histograms('influence-model-sweep.csv')
-
