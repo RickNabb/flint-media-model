@@ -155,14 +155,17 @@ def loop_per_row(df):
         '''for full dataframe'''
         #for cart use below
         #class_of_peak = evaluate_peak(int_data)
+
         #for lr use below
-        class_of_peak = evaluate_peak_time(int_data)
+        class_of_peak = evaluate_peak_lr(int_data)
         df.at[i,'class'] = class_of_peak
-        df['simple-spread-chance']=df['simple-spread-chance'].astype(float)
-        df['ba-m'] = df['ba-m'].astype(float)
-        df['citizen-media-influence']=df['citizen-media-influence'].astype(float)
-        df['citizen-citizen-influence']=df['citizen-citizen-influence'].astype(float)
-        df['flint-community-size']=df['flint-community-size'].astype(float)
+        df['simple-spread-chance'] = df['simple-spread-chance'].astype(float)
+        #df['simple-spread-chance'] = df['simple-spread-chance'].astype(float)
+        #df['ba-m'] = df['ba-m'].astype(float)
+        #df['citizen-media-influence'] = df['citizen-media-influence'].astype(float)
+        #df['citizen-citizen-influence'] = df['citizen-citizen-influence'].astype(float)
+        #df['flint-community-size'] = df['flint-community-size'].astype(float)
+
         #INCLUDE WHEN USING GRADUAL SCALAR
         #df['citizen-media-gradual-scalar'] = df['citizen-media-gradual-scalar'].astype(float)
     return(df)
@@ -297,16 +300,29 @@ def main_linearreg_belief(dataset):
     linear_reg(df_with_class)
 
 def make_histograms(dataset):
-    df_adj=createdataframe(dataset)
-    df_with_class = loop_per_row(df_adj)
-    #print(df_with_class)
+
+
     #histogram 1: total height of peak in all runs
-    plt.hist(df_with_class['class'], bins= 100)
-    plt.xlabel('Time of max peak')
+    #df_adj = createdataframe(dataset)
+    #df_with_class = loop_per_row(df_adj)
+    #plt.hist(df_with_class['class'], bins= 100)
+    #plt.xlabel('Time of max peak')
+    #plt.ylabel('Frequency')
+    #plt.title('Maximum peak time for all runs')
+    #plt.show()
+
+
+    #histogram 1: p = 0.01
+    df_adj = createdataframe(dataset)
+    df_with_class=loop_per_row(df_adj)
+    df_set_p = df_with_class.loc[df_with_class['simple-spread-chance'] == 0.75]
+    print('edit p', df_set_p)
+    class_var=df_with_class['class']
+    plt.hist(class_var, bins= 10)
+    plt.xlabel('Height of max peak')
     plt.ylabel('Frequency')
-    plt.title('Maximum peak time for all runs')
+    plt.title('Maximum peak Height where simple-spread-chance = 0.75')
     plt.show()
-    #histogram 1: p = 0
         #plot based on height of peak
         #plot based on time of peak
     #histogram 2: p=1
