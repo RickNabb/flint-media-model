@@ -97,14 +97,14 @@ def createdataframe(dataset):
     #for gradual
     df = pd.read_csv(dataset)
     #use below for standard
-    df.columns = ['run','n', 'spread-type', 'simple-spread-chance', 'graph-type', 'ba-m', 'citizen-media-influence', 'citizen-citizen-influence', 'flint-community-size', 'repetition','data']
+    df.columns = ['run','n', 'spread-type', 'simple-spread-chance', 'graph-type', 'ba-m', 'organizing-capacity', 'organizing-strategy', 'repetition','data']
 
     #use below for gradual scalar
     #df.columns = ['run', 'n', 'spread-type', 'simple-spread-chance', 'graph-type', 'ba-m', 'citizen-media-influence','citizen-citizen-influence', 'citizen-media-gradual-scalar','flint-community-size', 'data']
     #print(df['simple-spread-chance'])
     #print(df['spread-type'])
     #df.drop(['spread-type'], axis=1)
-    df_new=df.drop(columns=['spread-type', 'graph-type', 'n','run', 'repetition', 'flint-community-size'])
+    df_new=df.drop(columns=['spread-type', 'graph-type', 'n','run', 'repetition'])
     #print('after drop', df_new['spread-type'])
     #df_new.set_index('run', inplace=True)
     print(df_new)
@@ -157,13 +157,17 @@ def loop_per_row(df):
         #class_of_peak = evaluate_peak(int_data)
 
         #for lr use below
-        class_of_peak = evaluate_peak_time(int_data)
-        df.at[i,'class'] = class_of_peak
+        class_of_peak_time = evaluate_peak_time(int_data)
+        df.at[i,'class-time'] = class_of_peak_time
+        class_of_peak_height = evaluate_peak_lr(int_data)
+        df.at[i, 'class-height'] = class_of_peak_height
         df['simple-spread-chance'] = df['simple-spread-chance'].astype(float)
         df['simple-spread-chance'] = df['simple-spread-chance'].astype(float)
         df['ba-m'] = df['ba-m'].astype(float)
-        df['citizen-media-influence'] = df['citizen-media-influence'].astype(float)
-        df['citizen-citizen-influence'] = df['citizen-citizen-influence'].astype(float)
+        #df['organizing-capacity'] = df['organizing-capacity'].astype(float)
+        #df['organizing-strategy']= df['organizing-strategy'].astype(float)
+        #df['citizen-media-influence'] = df['citizen-media-influence'].astype(float)
+        #df['citizen-citizen-influence'] = df['citizen-citizen-influence'].astype(float)
         #df['flint-community-size'] = df['flint-community-size'].astype(float)
 
         #INCLUDE WHEN USING GRADUAL SCALAR
@@ -327,17 +331,17 @@ def make_histograms(dataset):
         #plot based on time of peak
 
 
-
-    #figure 2: as p changes
     df_adj = createdataframe(dataset)
     df_with_class = loop_per_row(df_adj)
     class_var = df_with_class['class']
-    sns.boxplot(data=df_with_class, x='citizen-media-influence', y='class', hue='simple-spread-chance')
-    plt.xlabel('citizen-citizen-influence')
-    plt.ylabel('Time of Max Peak')
-    plt.title('Peak Time as citizen-media-influence and spread-chance Change')
+    sns.boxplot(data=df_with_class, x='simple-spread-chance', y='class-height')
+    #sns.scatterplot(data=df_with_class, x='class-height', y='class-time')
+    plt.tick_params(axis='both', which='major', labelsize=6)
+    plt.xlabel('Simple Spread Chance')
+    plt.ylabel('Height of Max Peak')
+    plt.title('Impact of Simple Spread Chance on Peak Height')
     plt.show()
 
 
 
-main_linearreg_belief('influence-model-sweep.csv')
+make_histograms('dynamic-organizing-sweep-exp-results.csv')
