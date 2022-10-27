@@ -1031,7 +1031,8 @@ def process_belief_spread_exp_test_results(path):
     path)
 
 def process_belief_spread_exp_results(path):
-  simple_spread_chance = [ '0.01', '0.05', '0.1', '0.25', '0.5', '0.75' ]
+  simple_spread_chance = [ '0.01', '0.05']
+  # simple_spread_chance = [ '0.01', '0.05', '0.1', '0.25', '0.5', '0.75' ]
   ba_m = ['3','10']
   cit_media_influence = [ '0.01', '0.05', '0.1', '0.25', '0.5', '0.75' ]
   cit_cit_influence = [ '0.01', '0.05', '0.1', '0.25', '0.5', '0.75' ]
@@ -1051,7 +1052,8 @@ def belief_spread_exp_results_df(path):
 
   :path: The string path to the raw data files.
   '''
-  simple_spread_chance = [ '0.01', '0.05', '0.1', '0.25', '0.5', '0.75' ]
+  simple_spread_chance = [ '0.01', '0.05']
+  # simple_spread_chance = [ '0.01', '0.05', '0.1', '0.25', '0.5', '0.75' ]
   ba_m = ['3','10']
   cit_media_influence = [ '0.01', '0.05', '0.1', '0.25', '0.5', '0.75' ]
   cit_cit_influence = [ '0.01', '0.05', '0.1', '0.25', '0.5', '0.75' ]
@@ -1165,7 +1167,8 @@ def process_belief_spread_dynamic_results(path):
     path)
 
 def process_dynamic_organizing_results(path):
-  simple_spread_chance = [ '0.01', '0.05', '0.1', '0.25', '0.5', '0.75' ]
+  # simple_spread_chance = [ '0.01', '0.05', '0.1', '0.25', '0.5', '0.75' ]
+  simple_spread_chance = [ '0.01', '0.05']
   ba_m = ['3','10']
   organizing_capacity = ['1','5','10']
   organizing_strategy = ['neighbors-of-neighbors','high-degree-media','high-degree-citizens','high-degree-cit-and-media']

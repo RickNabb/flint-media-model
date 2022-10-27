@@ -1880,7 +1880,7 @@ SWITCH
 488
 load-graph?
 load-graph?
-0
+1
 1
 -1000
 
@@ -1942,7 +1942,7 @@ simple-spread-chance
 simple-spread-chance
 0
 1
-0.1
+0.05
 0.01
 1
 NIL
@@ -2272,7 +2272,7 @@ citizen-citizen-influence
 citizen-citizen-influence
 0
 1
-0.75
+0.1
 0.01
 1
 NIL
@@ -2287,7 +2287,7 @@ citizen-media-influence
 citizen-media-influence
 0
 1
-0.75
+0.1
 0.01
 1
 NIL
@@ -2413,7 +2413,7 @@ SWITCH
 538
 flint-organizing?
 flint-organizing?
-0
+1
 1
 -1000
 
@@ -2521,7 +2521,7 @@ SWITCH
 247
 media-monitor-peers?
 media-monitor-peers?
-1
+0
 1
 -1000
 
@@ -2529,7 +2529,7 @@ SLIDER
 209
 175
 382
-209
+208
 repetition
 repetition
 0
@@ -3191,10 +3191,10 @@ export-plot "num-new-beliefs" (word contagion-dir "/" rand "_new-beliefs.csv")</
       <value value="0.005"/>
     </enumeratedValueSet>
   </experiment>
-  <experiment name="dynamic-organizing-test" repetitions="5" sequentialRunOrder="false" runMetricsEveryStep="false">
+  <experiment name="media-connections-dynamic-organizing-test" repetitions="5" sequentialRunOrder="false" runMetricsEveryStep="false">
     <setup>setup
 
-let run-dir (word sim-output-dir substring date-time-safe 11 (length date-time-safe) "-dynamic-organizing")
+let run-dir (word sim-output-dir substring date-time-safe 11 (length date-time-safe) "-media-connections-dynamic-organizing")
 let graphs-path (word run-dir "/graphs")
 let graph-file (word graphs-path "/" simple-spread-chance "-" ba-m "-" organizing-capacity "-" flint-organizing-strategy "-" repetition ".csv")
 
@@ -3232,7 +3232,7 @@ export-plot "num-new-beliefs" (word contagion-dir "/" behavior-rand "_new-belief
       <value value="7"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="media-monitor-peers?">
-      <value value="false"/>
+      <value value="true"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="brain-type">
       <value value="&quot;discrete&quot;"/>
@@ -3249,10 +3249,6 @@ export-plot "num-new-beliefs" (word contagion-dir "/" behavior-rand "_new-belief
     <enumeratedValueSet variable="simple-spread-chance">
       <value value="0.01"/>
       <value value="0.05"/>
-      <value value="0.1"/>
-      <value value="0.25"/>
-      <value value="0.5"/>
-      <value value="0.75"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="graph-type">
       <value value="&quot;barabasi-albert&quot;"/>
@@ -3625,6 +3621,103 @@ export-plot "num-new-beliefs" (word contagion-dir "/" behavior-rand "_new-belief
       <value value="0.005"/>
     </enumeratedValueSet>
     <steppedValueSet variable="repetition" first="0" step="1" last="1"/>
+  </experiment>
+  <experiment name="media-connections-belief-spread-exp" repetitions="5" runMetricsEveryStep="false">
+    <setup>setup
+let run-dir (word sim-output-dir substring date-time-safe 11 (length date-time-safe) "-media-connections-influence-model-sweep")
+let graphs-path (word run-dir "/graphs")
+let graph-file (word graphs-path "/" simple-spread-chance "-" ba-m "-" citizen-media-influence "-" citizen-citizen-influence "-" repetition ".csv")
+ifelse (py:runresult (word "os.path.isfile('" graph-file "')")) [
+  set load-graph? true
+  set load-graph-path graph-file
+  setup
+] [
+  set load-graph? false
+  set save-graph-path graph-file
+  py:run (word "create_nested_dirs('" graphs-path "')")
+  setup
+  save-graph
+]
+
+set contagion-dir (word run-dir "/" simple-spread-chance "/" ba-m "/" citizen-media-influence "/" citizen-citizen-influence "/" repetition)
+py:run (word "create_nested_dirs('" contagion-dir "')")
+set behavior-rand random 10000</setup>
+    <go>go</go>
+    <final>export-world (word contagion-dir "/" behavior-rand "_world.csv")
+export-plot "percent-agent-beliefs" (word contagion-dir "/" behavior-rand "_percent-agent-beliefs.csv")
+export-plot "num-new-beliefs" (word contagion-dir "/" behavior-rand "_new-beliefs.csv")</final>
+    <timeLimit steps="300"/>
+    <metric>count citizens</metric>
+    <enumeratedValueSet variable="contagion-on?">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="dynamic-cit-cit-influence?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="dynamic-cit-media-influence?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="media-monitor-peers?">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="flint-organizing?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="load-graph?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="media-agents?">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="belief-resolution">
+      <value value="7"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="brain-type">
+      <value value="&quot;discrete&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="N">
+      <value value="300"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="tick-end">
+      <value value="300"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="spread-type">
+      <value value="&quot;simple&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="simple-spread-chance">
+      <value value="0.01"/>
+      <value value="0.05"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="graph-type">
+      <value value="&quot;barabasi-albert&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="ba-m">
+      <value value="3"/>
+      <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="epsilon">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="citizen-media-influence">
+      <value value="0.01"/>
+      <value value="0.05"/>
+      <value value="0.1"/>
+      <value value="0.25"/>
+      <value value="0.5"/>
+      <value value="0.75"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="citizen-citizen-influence">
+      <value value="0.01"/>
+      <value value="0.05"/>
+      <value value="0.1"/>
+      <value value="0.25"/>
+      <value value="0.5"/>
+      <value value="0.75"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="flint-community-size">
+      <value value="0.005"/>
+    </enumeratedValueSet>
+    <steppedValueSet variable="repetition" first="0" step="1" last="4"/>
   </experiment>
 </experiments>
 @#$#@#$#@
