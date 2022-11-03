@@ -100,7 +100,7 @@ def createdataframe(dataset):
     df.columns = ['run','n', 'spread-type', 'simple-spread-chance', 'graph-type', 'ba-m', 'organizing-capacity', 'organizing-strategy', 'repetition','data']
 
     #use below for gradual scalar
-    #df.columns = ['run', 'n', 'spread-type', 'simple-spread-chance', 'graph-type', 'ba-m', 'citizen-media-influence','citizen-citizen-influence', 'citizen-media-gradual-scalar','flint-community-size', 'data']
+   # df.columns = ['run', 'n', 'spread-type', 'simple-spread-chance', 'graph-type', 'ba-m', 'citizen-media-influence','citizen-citizen-influence', 'flint-community-size', 'repetition','data']
     #print(df['simple-spread-chance'])
     #print(df['spread-type'])
     #df.drop(['spread-type'], axis=1)
@@ -217,11 +217,19 @@ def evaluate_peak(data):
 
 def evaluate_peak_lr(data):
     deltas=[]
-    for i in range(4, len(data)):
-        delta=(data[i] - data[i - 5])
+    #captures with some idea of "time"
+    #for i in range(4, len(data)):
+    #    delta=(data[i] - data[i - 5])
+    #    deltas.append(delta)
+    #class_of_peak=max(deltas)
+    #return(class_of_peak)
+    #to just capture tallest height
+    for i in range(0, len(data)):
+        delta=(data[i])
         deltas.append(delta)
     class_of_peak=max(deltas)
     return(class_of_peak)
+
 
 def evaluate_peak_time(data):
     #to set time it would be the loc of max peak
@@ -304,44 +312,76 @@ def main_linearreg_belief(dataset):
     linear_reg(df_with_class)
 
 def make_histograms(dataset):
-
-
-    #histogram 1: total height of peak in all runs
-    #df_adj = createdataframe(dataset)
-    #df_with_class = loop_per_row(df_adj)
-    #plt.hist(df_with_class['class'], bins= 100)
-    #plt.xlabel('Time of max peak')
-    #plt.ylabel('Frequency')
-    #plt.title('Maximum peak time for all runs')
-    #plt.show()
-
-
-    #histogram 1: p = 0.01
-    #df_adj = createdataframe(dataset)
-    #df_with_class=loop_per_row(df_adj)
-    #df_set_p = df_with_class.loc[df_with_class['simple-spread-chance'] == 0.75]
-    #print('edit p', df_set_p)
-    #class_var=df_set_p['class']
-    #plt.hist(class_var, bins= 100)
-    #plt.xlabel('Height of max peak')
-    #plt.ylabel('Frequency')
-    #plt.title('Maximum peak Height where simple-spread-chance = 0.75')
-    #plt.show()
-        #plot based on height of peak
-        #plot based on time of peak
-
-
+    #plt 1: scatterplot of all results
     df_adj = createdataframe(dataset)
     df_with_class = loop_per_row(df_adj)
-    class_var = df_with_class['class']
-    #sns.boxplot(data=df_with_class, x='simple-spread-chance', y='class-height')
     sns.scatterplot(data=df_with_class, x='class-height', y='class-time')
-    plt.tick_params(axis='both', which='major', labelsize=6)
+    plt.xlabel('Height of Peak')
+    plt.ylabel('Time of Max Peak')
+    plt.title('Height vs Time of Peak for Parameter Sweep')
+    plt.show()
+
+    #plot 2: simple-spread-chance height
+    sns.boxplot(data=df_with_class, x='simple-spread-chance', y='class-height')
     plt.xlabel('Simple Spread Chance')
     plt.ylabel('Height of Max Peak')
     plt.title('Impact of Simple Spread Chance on Peak Height')
     plt.show()
 
+    #plot 3: simple-spread-chance time
+    sns.boxplot(data=df_with_class, x='simple-spread-chance', y='class-time')
+    plt.xlabel('Simple Spread Chance')
+    plt.ylabel('Time of Max Peak')
+    plt.title('Impact of Simple Spread Chance on Time of Peak')
+    plt.show()
+
+    # plot 3: simple-spread-chance time
+    sns.boxplot(data=df_with_class, x='simple-spread-chance', y='class-time')
+    plt.xlabel('Simple Spread Chance')
+    plt.ylabel('Time of Max Peak')
+    plt.title('Impact of Simple Spread Chance on Time of Peak')
+    plt.show()
+
+    # plot 3: ba-m
+    sns.boxplot(data=df_with_class, x='ba-m', y='class-height')
+    plt.xlabel('ba-m')
+    plt.ylabel('Height of Max Peak')
+    plt.title('Impact of ba-m on height of Peak')
+    plt.show()
+
+    #plot 4: ba-m time
+    sns.boxplot(data=df_with_class, x='ba-m', y='class-time')
+    plt.xlabel('ba-m')
+    plt.ylabel('Time of Max Peak')
+    plt.title('Impact of ba-m on time of Peak')
+    plt.show()
+
+    # plot 5: citizen-media-influence time
+    sns.boxplot(data=df_with_class, x='organizing-capacity', y='class-time')
+    plt.xlabel('organizing-capacity')
+    plt.ylabel('Time of Max Peak')
+    plt.title('Impact of organizing capacity on time of peak')
+
+    #plot 6: citizen-media-influence height
+    sns.boxplot(data=df_with_class, x='organizing-capacity', y='class-height')
+    plt.xlabel('organizing-capacity')
+    plt.ylabel('Height of Max Peak')
+    plt.title('Impact of organizing capacity on height of Peak')
+    plt.show()
+
+    #plt 7: citizen-citizen-influence height
+    sns.boxplot(data=df_with_class, x='organizing-strategy', y='class-height')
+    plt.xlabel('organizing strategy')
+    plt.ylabel('Height of Max Peak')
+    plt.title('Impact of organizing strategy on height of Peak')
+    plt.show()
+
+    # plt 8: citizen-citizen-influence time
+    sns.boxplot(data=df_with_class, x='organizing-strategy', y='class-time')
+    plt.xlabel('organizing strategy')
+    plt.ylabel('Time of Max Peak')
+    plt.title('Impact of organizing strategy on time of Peak')
+    plt.show()
 
 
-make_histograms('dynamic-organizing-sweep-exp-results.csv')
+make_histograms('media-connections-dynamic-organizing-exp-results.csv')
