@@ -97,14 +97,14 @@ def createdataframe(dataset):
     #for gradual
     df = pd.read_csv(dataset)
     #use below for standard
-    df.columns = ['run','n', 'spread-type', 'simple-spread-chance', 'graph-type', 'ba-m', 'organizing-capacity', 'organizing-strategy', 'repetition','data']
+    df.columns = ['run','n', 'spread-type', 'simple-spread-chance', 'graph-type', 'ba-m', 'citizen-media-influence', 'citizen-citizen-influence', 'organizing-capacity', 'organizing-strategy','data']
 
     #use below for gradual scalar
     #df.columns = ['run', 'n', 'spread-type', 'simple-spread-chance', 'graph-type', 'ba-m', 'citizen-media-influence','citizen-citizen-influence', 'citizen-media-gradual-scalar','flint-community-size', 'data']
     #print(df['simple-spread-chance'])
     #print(df['spread-type'])
     #df.drop(['spread-type'], axis=1)
-    df_new=df.drop(columns=['spread-type', 'graph-type', 'n','run', 'repetition'])
+    df_new=df.drop(columns=['spread-type', 'graph-type', 'n','run'])
     #print('after drop', df_new['spread-type'])
     #df_new.set_index('run', inplace=True)
     print(df_new)
@@ -334,14 +334,15 @@ def make_histograms(dataset):
     df_adj = createdataframe(dataset)
     df_with_class = loop_per_row(df_adj)
     class_var = df_with_class['class']
-    #sns.boxplot(data=df_with_class, x='simple-spread-chance', y='class-height')
-    sns.scatterplot(data=df_with_class, x='class-height', y='class-time')
+    sns.boxplot(data=df_with_class, x='organizing-capacity', y='class-time', hue='simple-spread-chance')
+    #sns.scatterplot(data=df_with_class, x='class-height', y='class-time')
     plt.tick_params(axis='both', which='major', labelsize=6)
-    plt.xlabel('Simple Spread Chance')
-    plt.ylabel('Height of Max Peak')
-    plt.title('Impact of Simple Spread Chance on Peak Height')
+    plt.xlabel('Organizing capacity')
+    plt.ylabel('time of Max Peak')
+    plt.title('Organizing capacity and simple spread chance0on time')
+    plt.legend(loc='upper right')
     plt.show()
 
 
 
-make_histograms('dynamic-organizing-sweep-exp-results.csv')
+make_histograms('media-connections-influence-model-sweep.csv')
