@@ -162,7 +162,6 @@ def loop_per_row(df):
     return(df)
 
         #ylength = len(int_data)
-        #USE TIME TO GRAPH
         #time = []
         #for i in range(1, ylength + 1):
         #    timestep = i

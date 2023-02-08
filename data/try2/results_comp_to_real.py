@@ -133,6 +133,7 @@ def loop_per_row(df, google_trends_data):
         #now we need to add columns for RMSE, MSE, BIAS, VARIANCE AND THEN RETURN THE DATAFRAME
         #example of how to add column below
         #df.at[i,'class-time'] = class_of_peak_time
+
     print(df)
     return df
         #here we need to start getting metrics

@@ -12,6 +12,8 @@ from sklearn.metrics import mean_squared_error
 from fastdtw import fastdtw
 from scipy.spatial.distance import euclidean
 import array as arr
+from scipy.stats import pearsonr
+
 '''
 NETLOGO PARSING
 '''
@@ -86,6 +88,20 @@ def createdataframe_media_con_inf(dataset):
     print(df)
     return df
 
+def createdataframe_nondynmic_org_exp(dataset):
+    df = pd.read_csv(dataset)
+    df.columns = ['run', 'n', 'spread-type', 'simple-spread-chance', 'graph-type', 'ba-m', 'citizen-media-influence',
+                  'citizen-citizen-influence', 'organizing-capacity', 'organizing-strategy','data']
+    print(df)
+    return df
+
+def createdataframe_inf_model(dataset):
+    df = pd.read_csv(dataset)
+    df.columns = ['run', 'n', 'spread-type', 'simple-spread-chance', 'graph-type', 'ba-m', 'citizen-media-influence',
+                  'citizen-citizen-influence', 'flint-community-size', 'repetition', 'data']
+    print(df)
+    return df
+
 def convertdata(data):
     sdata = data.strip(' ')
     ndata = nlogo_parse_chunk(sdata)
@@ -106,24 +122,51 @@ def convert_to_float(data):
         data[i] = float(data[i])
     return data
 
-def loop_per_row(df, google_trends_data):
+def loop_per_row(df_adj, google_trends_data):
     google_trends_data=google_trends_data
     google_tuple=[]
+    max_val = 1
+    df_with_dtw=df_adj.copy()
+    df_with_dtw['dtw']=None
+    df_with_dtw['rsme']=None
+    df_with_dtw['total_error']=None
+    df_with_dtw['corr_coef']=None
+    df_with_dtw['threshold']=None
+    dtw_list=[]
+    rsme_list = []
+    tot_error_list=[]
+    corr_coef_list=[]
+    google_list=[]
     for i in range(0, len(google_trends_data)):
+        google_list.append(google_trends_data[i])
         element = []
         element.append(google_trends_data[i])
         element.append(i)
         google_tuple.append(element)
-    for i in range(0,df.shape[0]):
-        run1 = df.iloc[i]
+    for i in range(0,df_with_dtw.shape[0]):
+        thresh=0
+        run1 = df_with_dtw.iloc[i]
         data = run1['data']
         finallist = convertdata(data)
         int_data = convert_to_int(finallist)
-        #print(int_data)
-        max_val = max(int_data)
-        adj_data = []
         for i in range(0, len(int_data)):
-            adj_val = (int_data[i] / (max_val+.001)) * 100
+            max_val_this_run = max(int_data)
+            thresh=thresh+int_data[i]
+            if max_val_this_run >= max_val:
+                max_val=max_val_this_run
+            else:
+                pass
+            print('max_val', max_val)
+        df_with_dtw.iat[i,1]=thresh
+    for i in range(0, df_with_dtw.shape[0]):
+        adj_data = []
+        run = df_with_dtw.iloc[i]
+        data = run['data']
+        finallist = convertdata(data)
+        int_data = convert_to_int(finallist)
+        short_list = int_data[:114]
+        for i in range(0, len(int_data)):
+            adj_val = (int_data[i] / (max_val)) * 100
             adj_data.append(adj_val)
         tuple_list=[]
         for i in range(0, len(adj_data)):
@@ -131,28 +174,34 @@ def loop_per_row(df, google_trends_data):
             element.append(adj_data[i])
             element.append(i)
             tuple_list.append(element)
+        RMSE = (mean_squared_error(google_trends_data, short_list, squared=True))
+        corr_coef = pearsonr(google_trends_data,short_list)
+        corr_coef=corr_coef[0]
+        print('cc', corr_coef )
+        #print(RMSE)
+        rsme_list.append(RMSE)
+        corr_coef_list.append(corr_coef)
         #print(tuple_list)
         #print(google_tuple)
         x=np.array(google_tuple)
         y=np.array(tuple_list)
         distance,path = fastdtw(x, y, dist=euclidean)
         print(distance)
-        #now need to make this an array
-
-        if i == 0:
-            #print(len(short_list))
-            pass
-        else:
-            pass
-        #RMSE= (mean_squared_error(google_trends_data,short_list,squared=True))
-        #MSE = (mean_squared_error(google_trends_data, short_list, squared=False))
-        df.at[i, 'dtw'] = distance
+        dtw_list.append(distance)
+    for i in range(0, len(dtw_list)):
+        dtw_val=dtw_list[i]
+        #note as the original dataframe shape changes, the value below can be 9,10,11, etc
+        df_with_dtw.iat[i,10]=dtw_val
+        rsme_val=rsme_list[i]
+        df_with_dtw.iat[i,11]=rsme_val
+        corr_val=corr_coef_list[i]
+        df_with_dtw.iat[i, 12] = corr_val
         #print(max(short_list))
         #now we need to add columns for RMSE, MSE, BIAS, VARIANCE AND THEN RETURN THE DATAFRAME
         #example of how to add column below
         #df.at[i,'class-time'] = class_of_peak_time
-    print(df)
-    return df
+    print(df_with_dtw)
+    return df_with_dtw
         #here we need to start getting metrics
 
 def load_google(file):
@@ -173,6 +222,10 @@ def analyze(csv_file):
         df_adj = createdataframe_media_con_dyn_org(csv_file)
     elif csv_file == 'media-connections-influence-model-sweep.csv':
         df_adj = createdataframe_media_con_inf(csv_file)
+    elif csv_file == 'nondynamic-organizing-exp-results.csv':
+        df_adj = createdataframe_nondynmic_org_exp(csv_file)
+    elif csv_file == "influence-model-sweep.csv":
+        df_adj= createdataframe_inf_model(csv_file)
     else:
         pass
     dataframe_with_metrics = loop_per_row(df_adj, google_trends_data)
@@ -184,45 +237,96 @@ def best_graph(results):
     df = pd.read_csv("google-trends.csv")
     df.columns = ['week', 'data']
     google_data = df['data'].to_list()
-    run1 = results.iloc[299]
+    run1 = results.iloc[569]
     data = run1['data']
     finallist = convertdata(data)
     int_data = convert_to_int(finallist)
-    max_val = max(int_data)
+    max_val = 0
+    for i in range(0, len(int_data)):
+        max_val_this_run = max(int_data)
+        if max_val_this_run >= max_val:
+            max_val = max_val_this_run
+        else:
+            pass
     adj_data = []
     for i in range(0, len(int_data)):
         adj_val = (int_data[i] / (max_val)) * 100
         adj_data.append(adj_val)
-    print("best sim should be list",adj_data)
     #NEED TO PROCESS THIS DATA
     plt.plot(google_data, label="google trends")
     plt.plot(adj_data, label = "best simulation")
     plt.legend()
-    plt.title("Closest Model Based on DTW media-connections-dynamic-organizing-exp-results")
+    plt.title("Closest Model Based on DTW influence model sweep.")
     plt.show()
+
+
     pass
     #here make best results off of whatever row specified......
+
+def df_figures(results):
+    sns.boxplot(data=results, x='citizen-media-influence', y='dtw')
+    # sns.scatterplot(data=df_with_class, x='class-height', y='class-time')
+    plt.tick_params(axis='both', which='major', labelsize=6)
+    plt.xlabel('Citizen-Media-Influence')
+    plt.ylabel('DTW Distance')
+    plt.title('media-con-dyn-org')
+    plt.legend(loc='upper right')
+    plt.show()
 
 
 def main(csv_file):
     if csv_file == 'media-connections-dynamic-organizing-exp-results.csv':
         print("media-connections-dynamic-organizing-exp-results.csv")
         results = analyze(csv_file)
-        print("THIS ROW",results[results.dtw == results.dtw.min()])
+        print("THIS ROW dtw",results[results.dtw == results.dtw.min()])
+        print("THIS ROW RSME", results[results.dtw == results.dtw.min()])
+        results.to_csv('media-connections-dynamic-organizing-exp-results_dtw.csv')
         best_graph(results)
+        df_figures(results)
         data_med_con_dyn_org = results['dtw'].to_list()
-        plt.hist(data_med_con_dyn_org)
+        plt.hist(data_med_con_dyn_org, bins=10)
         plt.title("dtw Data_med_con_dyn_org")
         plt.show()
         #results is the dataframe with added RMSE
     elif csv_file == 'media-connections-influence-model-sweep.csv':
         results = analyze(csv_file)
         best_graph(results)
+        df_figures(results)
+        results.to_csv('media-connections-influence-model-sweep-dtw.csv')
+        print("THIS ROW", results[results.dtw == results.dtw.min()])
         print(results[results.dtw == results.dtw.min()])
         #best_run=results[results.RMSE == results.RMSE.min()]
         data_med_con_inf_model_sweep = results['dtw'].to_list()
-        plt.hist(data_med_con_inf_model_sweep)
+
+        plt.hist(data_med_con_inf_model_sweep, bins=10)
         plt.title("dtw Data_med_con_inf_model_sweep")
+        plt.show()
+
+    elif csv_file == "nondynamic-organizing-exp-results.csv":
+        results = analyze(csv_file)
+        best_graph(results)
+        df_figures(results)
+        results.to_csv('media-connections-influence-model-sweep-dtw.csv')
+        print("THIS ROW", results[results.dtw == results.dtw.min()])
+        print(results[results.dtw == results.dtw.min()])
+        # best_run=results[results.RMSE == results.RMSE.min()]
+        data_med_con_inf_model_sweep = results['dtw'].to_list()
+
+        plt.hist(data_med_con_inf_model_sweep, bins=10)
+        plt.title("dtw Data_med_con_inf_model_sweep")
+        plt.show()
+    elif csv_file == "influence-model-sweep.csv":
+        results = analyze(csv_file)
+        best_graph(results)
+        df_figures(results)
+        results.to_csv('influence-model-sweep-dtw.csv')
+        print("THIS ROW", results[results.dtw == results.dtw.min()])
+        print(results[results.dtw == results.dtw.min()])
+        # best_run=results[results.RMSE == results.RMSE.min()]
+        data_med_con_inf_model_sweep = results['dtw'].to_list()
+
+        plt.hist(data_med_con_inf_model_sweep, bins=10)
+        plt.title("dtw Data_inf_model_sweep")
         plt.show()
 
     else:
