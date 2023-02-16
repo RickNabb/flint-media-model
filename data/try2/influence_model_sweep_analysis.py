@@ -122,149 +122,135 @@ def loop_per_row(df_adj, google_trends_data):
         short_list=int_data[: 114]
         scaled_short_list=[]
         #code below adds in scaled impact
-        if max(short_list)>= 1:
+        #df_new['short list'].iloc[i]=short_list
+
+        for h in range(0, len(short_list)):
+            thresh=thresh+int_data[h]
+        if thresh >= cutoff:
+            df_new['threshold'].iloc[i] = 1
             for k in range(0, len(short_list)):
                 val=(short_list[k]/max(short_list))*100
                 scaled_short_list.append(val)
-        else:
-            for k in range(0, len(short_list)):
-                val = (short_list[k] / 1) * 100
-                scaled_short_list.append(val)
-        #df_new['short list'].iloc[i]=short_list
-        df_new['short list'].iloc[i] = scaled_short_list
-        for h in range(0, len(scaled_short_list)):
-            thresh=thresh+int_data[h]
-            error_addition=abs(short_list[h]-google_trends_data[h])
-            error=error+error_addition
-        if thresh >= cutoff:
-            df_new['threshold'].iloc[i] = 1
-            print("thresh > cutoff", i)
+            for t in range(0, len(scaled_short_list)):
+                error_addition = abs(scaled_short_list[t] - google_trends_data[t])
+                error = error + error_addition
+            corr_coef = pearsonr(google_trends_data, scaled_short_list)
+            corr_val = corr_coef[0]
+            df_new['corr_coef'].iloc[i] = corr_val
+            RMSE = (mean_squared_error(google_trends_data, scaled_short_list, squared=True))
+            df_new['rmse'].iloc[i] = RMSE
+            df_new["total_error"].iloc[i] = error
+            #print("thresh > cutoff", i)
         else:
             df_new['threshold'].iloc[i] = 0
+            scaled_short_list=short_list
             print('nope',i)
-        corr_coef=pearsonr(google_trends_data,scaled_short_list)
-        corr_val=corr_coef[0]
-        df_new['corr_coef'].iloc[i] = corr_val
-        RMSE = (mean_squared_error(google_trends_data, scaled_short_list, squared=True))
-        df_new['rmse'].iloc[i]=RMSE
-        df_new["total_error"].iloc[i]=error
-        print('error', error)
+        df_new['short list'].iloc[i] = scaled_short_list
+
+
+        #print('error', error)
+        df_new.to_csv('infl-model-sweep-eval.csv')
 
         #create pandas dataframe for each over threshold
 
     #need to sort these by threshold- also no transformation is happening here
     #test a few?
-    df_new.to_csv("infl-model-sweep-eval.csv")
-    sns.scatterplot(data=df_new, x='rmse', y='corr_coef')
-    plt.title("Influence Model Sweep Analysis")
-    plt.xlabel("RMSE")
-    plt.ylabel("Corr_coef")
-    plt.show()
+    #df_new.to_csv("infl-model-sweep-eval.csv")
+    #sns.scatterplot(data=df_new, x='rmse', y='corr_coef')
+    #plt.title("Influence Model Sweep Analysis")
+    #plt.xlabel("RMSE")
+    #plt.ylabel("Corr_coef")
+    #plt.show()
 
-    min_RMSE=df_new[df_new.rmse == df_new.rmse.min()]
-    print('min rmse:',min_RMSE)
-    run = min_RMSE["short list"].tolist()
-    run=run[0]
-    time_list=[]
-    for i in range(0, 114):
-        time_list.append(i)
-    print(time_list)
-    print(run)
-    print(type(run))
-    plt.plot(time_list, run, label='simulation')
-    plt.plot(time_list, google_trends_data, label= 'gooogle trends')
-    plt.legend()
-    plt.title("Min RMSE Influence Model_Sweep_Analysis")
-    plt.show()
+    #now that this works, we are going to do some fun df reorganization to make it easier to make seaborn figs
+    #only including runs above threshold
 
-    max_cc = df_new[df_new.corr_coef == df_new.corr_coef.max()]
-    print('max cc:', max_cc)
-    run = max_cc["short list"].tolist()
-    run = run[0]
-    time_list = []
-    for i in range(0, 114):
-        time_list.append(i)
-    print(time_list)
-    print(run)
-    print(type(run))
-    plt.plot(time_list, run, label='simulation')
-    plt.plot(time_list, google_trends_data, label='google trends')
-    plt.legend()
-    plt.title("Max CC Influence Model_Sweep_Analysis")
-    plt.show()
-
-    max_RMSE=df_new[df_new.rmse == df_new.rmse.max()]
-    print('min rmse:',max_RMSE)
-    run = max_RMSE["short list"].tolist()
-    run=run[0]
-    time_list=[]
-    for i in range(0, 114):
-        time_list.append(i)
-    print(time_list)
-    print(run)
-    print(type(run))
-    plt.plot(time_list, run, label='simulation')
-    plt.plot(time_list, google_trends_data, label= 'gooogle trends')
-    plt.legend()
-    plt.title("Max RMSE Influence Model_Sweep_Analysis")
-    plt.show()
-
-
-    sns.lineplot(data=df_new, y=short_list[0])
-    plt.show()
+    #df_copy = df_new.copy()
+    #df_thresh=df_copy[df_copy["threshold"]==1]
+    #print(df_thresh)
+    #df_sea = pd.DataFrame(columns=['time','sim_num','simple-spread-chance', 'ba-m', 'citizen-media-influence', 'citizen-citizen-influence', 'new-agents', 'new-agents-scaled', 'rmse', 'corr_coef','total_error'])
+    #df_sea_one_run = pd.DataFrame(columns=['time', 'sim_num', 'simple-spread-chance', 'ba-m', 'citizen-media-influence',
+     #                                      'citizen-citizen-influence', 'new-agents-scaled', 'rmse',
+     #                                      'corr_coef', 'total_error'], index=range(114))
+    #for i in range(0, df_thresh.shape[0]):
+    #    data=df_thresh["short list"].iloc[i]
+    #    if i%100==0:
+    #        print(i)
+    #    else:
+    #        pass
+        #print(data)
+    #    for j in range(0, len(data)):
+    #        df_sea_one_run['time'].iloc[j]=j
+    #        df_sea_one_run['sim_num'].iloc[j]= df_thresh['run'].iloc[i]
+    #        df_sea_one_run['simple-spread-chance'].iloc[j] = df_thresh['simple-spread-chance'].iloc[i]
+    #        df_sea_one_run['ba-m'].iloc[j] = df_thresh['ba-m'].iloc[i]
+    #        df_sea_one_run['citizen-media-influence'].iloc[j] = df_thresh['citizen-media-influence'].iloc[i]
+     #       df_sea_one_run['citizen-citizen-influence'].iloc[j] = df_thresh['citizen-citizen-influence'].iloc[i]
+      #      df_sea_one_run['new-agents-scaled'].iloc[j]=data[j]
+       #     df_sea_one_run['rmse'].iloc[j] = df_thresh['rmse'].iloc[i]
+        #    df_sea_one_run['corr_coef'].iloc[j] = df_thresh['corr_coef'].iloc[i]
+     #       df_sea_one_run['total_error'].iloc[j] = df_thresh['total_error'].iloc[i]
+     #   df_sea=pd.concat([df_sea,df_sea_one_run])
+    #print(df_sea)
+    #df_sea.to_csv("df_sea")
 
 
 
 
-        #old stuff is below
- #       for i in range(0, len(int_data)):
- #           max_val_this_run = max(int_data)
- #           thresh=thresh+int_data[i]
- #           if max_val_this_run >= max_val:
- #               max_val=max_val_this_run
- #           else:
- #               pass
- #           print('max_val', max_val)
- #       df.iat[i,1]=thresh
- #   for i in range(0, df.shape[0]):
- #       adj_data = []
- #       run = df_with_dtw.iloc[i]
- #       data = run['data']
- #       finallist = convertdata(data)
- #       int_data = convert_to_int(finallist)
- #       short_list = int_data[:114]
- #       for i in range(0, len(int_data)):
- #           adj_val = (int_data[i] / (max_val)) * 100
- #           adj_data.append(adj_val)
- #       tuple_list=[]
- #       for i in range(0, len(adj_data)):
- #           element=[]
- #           element.append(adj_data[i])
- #           element.append(i)
- #           tuple_list.append(element)
- #       RMSE = (mean_squared_error(google_trends_data, short_list, squared=True))
- #       corr_coef = pearsonr(google_trends_data,short_list)
- #       corr_coef=corr_coef[0]
- #       print('cc', corr_coef )
- #       #print(RMSE)
- #       rsme_list.append(RMSE)
- #       corr_coef_list.append(corr_coef)
- #       #print(tuple_list)
- #   for i in range(0, len(dtw_list)):
- #       dtw_val=dtw_list[i]
- #       #note as the original dataframe shape changes, the value below can be 9,10,11, etc
- #       df_with_dtw.iat[i,10]=dtw_val
- #       rsme_val=rsme_list[i]
- #       df_with_dtw.iat[i,11]=rsme_val
- #       corr_val=corr_coef_list[i]
- #       df_with_dtw.iat[i, 12] = corr_val
- #       #print(max(short_list))
- #       #now we need to add columns for RMSE, MSE, BIAS, VARIANCE AND THEN RETURN THE DATAFRAME
- #       #example of how to add column below
- #      #df.at[i,'class-time'] = class_of_peak_time
- #   print(df_with_dtw)
- #   return df_with_dtw
- #       #here we need to start getting metrics
+
+    #df_goog=pd.DataFrame(columns=['time','google-data'])
+
+
+
+
+    #min_RMSE=df_new[df_new.rmse == df_new.rmse.min()]
+    #print('min rmse:',min_RMSE)
+    #run = min_RMSE["short list"].tolist()
+    #run=run[0]
+    #time_list=[]
+    #for i in range(0, 114):
+    #    time_list.append(i)
+    #print(time_list)
+    #print(run)
+    #print(type(run))
+    #plt.plot(time_list, run, label='simulation')
+    #plt.plot(time_list, google_trends_data, label= 'gooogle trends')
+    #plt.legend()
+    #plt.title("Min RMSE Influence Model_Sweep_Analysis")
+    #plt.show()
+
+    #max_cc = df_new[df_new.corr_coef == df_new.corr_coef.max()]
+    #print('max cc:', max_cc)
+    #run = max_cc["short list"].tolist()
+    #run = run[0]
+    #time_list = []
+    #for i in range(0, 114):
+    #    time_list.append(i)
+    #print(time_list)
+    #print(run)
+    #print(type(run))
+    #plt.plot(time_list, run, label='simulation')
+    #plt.plot(time_list, google_trends_data, label='google trends')
+    #plt.legend()
+    #plt.title("Max CC Influence Model_Sweep_Analysis")
+    #plt.show()
+
+    #max_RMSE=df_new[df_new.rmse == df_new.rmse.max()]
+    #print('min rmse:',max_RMSE)
+    #run = max_RMSE["short list"].tolist()
+    #run=run[0]
+    #time_list=[]
+    #for i in range(0, 114):
+    #    time_list.append(i)
+    #print(time_list)
+    #print(run)
+    #print(type(run))
+    #plt.plot(time_list, run, label='simulation')
+    #plt.plot(time_list, google_trends_data, label= 'gooogle trends')
+    #plt.legend()
+    #plt.title("Max RMSE Influence Model_Sweep_Analysis")
+    #plt.show()
+    #return df_new
 
 def load_google(file):
     df = pd.read_csv(file)

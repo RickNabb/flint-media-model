@@ -110,18 +110,30 @@ def loop_per_row(df_adj, google_trends_data):
     df_new['rmse']=None
     df_new['total_error']=None
     df_new['corr_coef']=None
+    df_new['short list']=None
     for i in range(0,df_new.shape[0]):
         thresh=0
         error=0
         cutoff=150
+        scaled_short_list = []
         run1 = df_new["data"].iloc[i]
         #data = run1['data']
         finallist = convertdata(run1)
         int_data = convert_to_int(finallist)
         short_list=int_data[: 114]
+        if max(short_list)>= 1:
+            for k in range(0, len(short_list)):
+                val=(short_list[k]/max(short_list))*100
+                scaled_short_list.append(val)
+        else:
+            for k in range(0, len(short_list)):
+                val = (short_list[k] / 1) * 100
+                scaled_short_list.append(val)
+        #df_new['short list'].iloc[i]=short_list
+        df_new['short list'].iloc[i] = scaled_short_list
         for h in range(0, len(short_list)):
             thresh=thresh+int_data[h]
-            error_addition=abs(short_list[h]-google_trends_data[h])
+            error_addition=abs(scaled_short_list[h]-google_trends_data[h])
             error=error+error_addition
         if thresh >= cutoff:
             df_new['threshold'].iloc[i] = 1
@@ -140,14 +152,40 @@ def loop_per_row(df_adj, google_trends_data):
 
 
     print(df_new)
+    # now that this works, we are going to do some fun df reorganization to make it easier to make seaborn figs
+    # only including runs above threshold
+    df_copy = df_new.copy()
+    df_thresh = df_copy[df_copy["threshold"] == 1]
+    print(df_thresh)
+    df_sea = pd.DataFrame(columns=['time', 'sim_num', 'simple-spread-chance', 'ba-m', 'citizen-media-influence',
+                                   'citizen-citizen-influence', 'new-agents', 'new-agents-scaled', 'rmse', 'corr_coef',
+                                   'total_error'])
+    df_sea_one_run = pd.DataFrame(columns=['time', 'sim_num', 'simple-spread-chance', 'ba-m', 'citizen-media-influence',
+                                           'citizen-citizen-influence', 'new-agents-scaled', 'rmse',
+                                           'corr_coef', 'total_error'], index=range(114))
+    for i in range(0, df_thresh.shape[0]):
+        data = df_thresh["short list"].iloc[i]
+        if i % 100 == 0:
+            print(i)
+        else:
+            pass
+        # print(data)
+        for j in range(0, len(data)):
+            df_sea_one_run['time'].iloc[j] = j
+            df_sea_one_run['sim_num'].iloc[j] = df_thresh['run'].iloc[i]
+            df_sea_one_run['simple-spread-chance'].iloc[j] = df_thresh['simple-spread-chance'].iloc[i]
+            df_sea_one_run['ba-m'].iloc[j] = df_thresh['ba-m'].iloc[i]
+            df_sea_one_run['citizen-media-influence'].iloc[j] = df_thresh['citizen-media-influence'].iloc[i]
+            df_sea_one_run['citizen-citizen-influence'].iloc[j] = df_thresh['citizen-citizen-influence'].iloc[i]
+            df_sea_one_run['new-agents-scaled'].iloc[j] = data[j]
+            df_sea_one_run['rmse'].iloc[j] = df_thresh['rmse'].iloc[i]
+            df_sea_one_run['corr_coef'].iloc[j] = df_thresh['corr_coef'].iloc[i]
+            df_sea_one_run['total_error'].iloc[j] = df_thresh['total_error'].iloc[i]
+        df_sea = pd.concat([df_sea, df_sea_one_run])
+    print(df_sea)
+    df_sea.to_csv("df_sea_media_conn_ifl.csv")
 
-
-
-
-
-
-
-        #old stuff is below
+    #old stuff is below
  #       for i in range(0, len(int_data)):
  #           max_val_this_run = max(int_data)
  #           thresh=thresh+int_data[i]

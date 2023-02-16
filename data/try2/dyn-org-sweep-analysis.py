@@ -111,29 +111,43 @@ def loop_per_row(df_adj, google_trends_data):
     df_new['rmse']=None
     df_new['total_error']=None
     df_new['corr_coef']=None
+    df_new['short list'] = None
     for i in range(0,df_new.shape[0]):
         thresh=0
         error=0
         cutoff=150
+        scaled_short_list=[]
         run1 = df_new["data"].iloc[i]
         #data = run1['data']
         finallist = convertdata(run1)
         int_data = convert_to_int(finallist)
-        short_list=int_data[: 101]
+        short_list=int_data[: 100]
         for h in range(0, len(short_list)):
             thresh=thresh+int_data[h]
-            error_addition=abs(short_list[h]-google_trends_data[h])
-            error=error+error_addition
         if thresh >= cutoff:
             df_new['threshold'].iloc[i] = 1
             print("thresh > cutoff", i)
         else:
-            df_new.iat[i, 11] = 0
+            df_new['threshold'].iloc[i] = 0
             print('nope',i)
-        corr_coef=pearsonr(google_trends_data,short_list)
+        if max(short_list)>= 1:
+            for k in range(0, len(short_list)):
+                val=(short_list[k]/max(short_list))*100
+                scaled_short_list.append(val)
+        else:
+            for k in range(0, len(short_list)):
+                val = (short_list[k] / 1) * 100
+                scaled_short_list.append(val)
+        #df_new['short list'].iloc[i]=short_list
+        df_new['short list'].iloc[i] = scaled_short_list
+
+        for h in range(0, 100):
+            error_addition=abs(scaled_short_list[h]-google_trends_data[h])
+            error=error+error_addition
+        corr_coef=pearsonr(google_trends_data,scaled_short_list)
         corr_val=corr_coef[0]
         df_new['corr_coef'].iloc[i] = corr_val
-        RMSE = (mean_squared_error(google_trends_data, short_list, squared=True))
+        RMSE = (mean_squared_error(google_trends_data, scaled_short_list, squared=True))
         df_new['rmse'].iloc[i]=RMSE
         df_new["total_error"].iloc[i]=error
         print('error', error)
