@@ -837,10 +837,22 @@ end
 ;; and the influencer agents state and subscribers.
 to save-graph
   ;; TODO: Find some way to get the prior & malleable attributes into a list rather than hardcoding
-  let cit-ip ([(list self (dict-value brain "A") (dict-value brain "ID"))] of citizens)
-  let cit-social [[self] of both-ends] of social-friends
-  let media-ip ([(list self (dict-value brain "A"))] of medias)
-  let media-sub [[self] of both-ends] of subscribers
+  let cit-ip []
+  let cit-social []
+  foreach sort citizens [ cit ->
+    set cit-ip (lput (list cit (dict-value ([brain] of cit) "A") (dict-value ([brain] of cit) "ID")) cit-ip)
+    foreach sort [ out-social-friend-neighbors ] of cit [ nb ->
+      set cit-social (lput (list cit nb) cit-social)
+    ]
+  ]
+  let media-ip []
+  let media-sub []
+  foreach sort medias [ m ->
+    set media-ip (lput (list m (dict-value ([brain] of m) "A")) media-ip)
+    foreach sort [ subscriber-neighbors ] of m [ sub ->
+      set media-sub (lput (list m sub) media-sub)
+    ]
+  ]
   let flint-citizens list-as-py-array ([ (dict-value brain "ID") ] of citizens with [is-flint?]) false
   py:run (word "save_graph('" save-graph-path "','" cit-ip "','" cit-social "','" media-ip "','" media-sub "'," flint-citizens ")")
 end
@@ -856,8 +868,8 @@ to read-graph
 
   ;; id, a
   ;; TODO: Change this from being hard-coded for one belief "A" to being general
-  let i 0
   create-citizens (length citizenz) [
+    let i read-from-string (substring (word self) 9 ((length (word self)) - 1))
     let c (item i citizenz)
     let id item 0 c
     let a read-from-string (item 1 c)
@@ -876,8 +888,8 @@ to read-graph
     set i i + 1
   ]
 
-  set i 0
   create-medias (length mediaz) [
+    let i (read-from-string (substring (word self) 7 ((length (word self)) - 1))) - N
     let m (item i mediaz)
     let id item 0 m
     let a read-from-string (item 1 m)
@@ -895,6 +907,7 @@ to read-graph
     set color green
     set i i + 1
   ]
+  show citizens-conns
 
   foreach citizens-conns [ c ->
     let c1 read-from-string (item 0 c)
@@ -1880,7 +1893,7 @@ SWITCH
 488
 load-graph?
 load-graph?
-1
+0
 1
 -1000
 
@@ -1890,7 +1903,7 @@ INPUTBOX
 242
 555
 load-graph-path
-D:/school/grad-school/Tufts/research/flint-media-model/simulation-data/16-Oct-2022-dynamic-organizing/graphs/0.1-10-10-high-degree-cit-and-media-4.csv
+C:/Users/nrabb_000/Documents/school/grad-school/Tufts/research/projects/flint-media-model/simulation-data/test.csv
 1
 0
 String
@@ -1901,7 +1914,7 @@ INPUTBOX
 244
 622
 save-graph-path
-D:/school/grad-school/Tufts/research/flint-media-model/simulation-data/16-Oct-2022-dynamic-organizing/graphs/0.5-10-10-neighbors-of-neighbors-2.csv
+C:/Users/nrabb_000/Documents/school/grad-school/Tufts/research/projects/flint-media-model/simulation-data/test.csv
 1
 0
 String
@@ -1982,7 +1995,7 @@ tick-end
 tick-end
 30
 1000
-300.0
+100.0
 1
 1
 NIL
