@@ -225,6 +225,33 @@ def nlogo_graph_to_nx(citizens, friend_links):
     G.add_edge(int(end1), int(end2))
   return G
 
+def nlogo_graph_to_nx_with_media(citizens, friend_links, media, subscribers):
+  G = nx.Graph()
+  # agents = citizens + media
+  links = friend_links + subscribers
+  for agent in citizens:
+    cit_id = int(agent['ID'])
+    G.add_node(cit_id)
+    G.nodes[cit_id]['type'] = 'citizen'
+    for attr in agent['malleable']:
+      G.nodes[cit_id][attr] = agent[attr]
+    for attr in agent['prior']:
+      G.nodes[cit_id][attr] = agent[attr]
+  for agent in media:
+    media_id = int(agent['ID'])
+    G.add_node(media_id)
+    G.nodes[media_id]['type'] = 'media'
+    for attr in agent['malleable']:
+      G.nodes[media_id][attr] = agent[attr]
+    for attr in agent['prior']:
+      G.nodes[media_id][attr] = agent[attr]
+  for link in links:
+    link_split = link.split(' ')
+    end1 = link_split[1]
+    end2 = link_split[2].replace(')','')
+    G.add_edge(int(end1), int(end2))
+  return G
+
 def influencer_paths(G, subscribers, target):
   target_id = int(target.split(' ')[1].replace(')', ''))
   return { subscriber.split(' ')[2].replace(')',''): nx.all_simple_paths(G, subscriber.split(' ')[2].replace(')',''), target, cutoff=5) for subscriber in subscribers }
@@ -294,17 +321,16 @@ number of nodes closest to n
 :param n: approximate number of nodes in community    
 """
 
-def flint_community(G, n):   
-    dendo = community_louvain.generate_dendrogram(G)
+def flint_community(communities, n):   
     list_mean = []
-    for level in range(len(dendo)):
-        partition = community_louvain.partition_at_level(dendo, level)
-        arr = np.array(list(Counter(partition.values()).values()))
-        mean = np.mean(arr)
-        list_mean.append(mean)
+    for level in range(len(communities)):
+      partition = communities[level]
+      arr = np.array(list(Counter(partition.values()).values()))
+      mean = np.mean(arr)
+      list_mean.append(mean)
     closest_mean = find_nearest(list_mean, n)
     lvl = list_mean.index(closest_mean)
-    partition = community_louvain.partition_at_level(dendo, lvl)
+    partition = communities[lvl]
     # value is number of nodes in community [key]
     count = Counter(partition.values())
     # array of numbers of nodes in each community
@@ -315,3 +341,63 @@ def flint_community(G, n):
     closest_community = list(count.keys())[list(count.values()).index(comm_size)]    
     nodes_in_partition = get_keys(partition, closest_community)
     return nodes_in_partition
+
+def nlogo_community_sizes_by_level(citizens, social_friends):
+  G = nlogo_graph_to_nx(citizens, social_friends)
+  dendrogram = community_louvain.generate_dendrogram(G)
+  levels = len(dendrogram)
+  return [ max(list(community_louvain.partition_at_level(dendrogram, level).values())) for level in range(levels) ]
+
+def nlogo_communities_by_level(citizens, social_friends):
+  G = nlogo_graph_to_nx(citizens, social_friends)
+  dendrogram = community_louvain.generate_dendrogram(G)
+  levels = len(dendrogram)
+  return [ community_louvain.partition_at_level(dendrogram, level) for level in range(levels) ]
+
+def media_peer_connections(G):
+  media_degrees = np.array([ G.degree(node) for node in G.nodes if G.nodes[node]['type'] == 'media'])
+  num_media = len(media_degrees)
+  max_degree = max(media_degrees)
+  connection_prob = media_degrees / max_degree
+  prob_matrix = np.ones((num_media,num_media)) * connection_prob
+  prob_matrix = np.multiply(prob_matrix, 1 - np.identity(num_media))
+  rolls = np.random.rand(num_media,num_media)
+  connections = (rolls <= prob_matrix).astype(int)
+  return connections
+
+def graph_homophily(G):
+  '''
+  Takes a measure of homophily in the graph based on first-level neighbor
+  distance on a given node attribute. Details can be found in Rabb et al. 2022
+  Eq (9).
+
+  :param G: The networkx graph to take the measure on.
+  '''
+  distances = []
+  attrs = np.array([ list(G.nodes[node].values()) for node in G.nodes ])
+  adj = nx.adj_matrix(G)
+  for node in G.nodes:
+    norm_vector = np.array([ np.linalg.norm(attr - attrs[node]) for attr in attrs ])
+    # Note: adj[node] * norm_vector sums the values already
+    distances.append((adj[node] * norm_vector)[0] / adj[node].sum())
+  return (np.array(distances).mean(), np.array(distances).var())
+
+def node_degree_centrality(G, node):
+  '''
+  Get the degree centrality for a single node in G.
+
+  :param G: The graph.
+  :param node: The integer node index to get.
+  '''
+  return nx.degree_centrality(G)[node]
+
+def nodes_degree_centrality(G, nodes):
+  return sum([ node_degree_centrality(G, node) for node in nodes ])
+
+def test_ws_graph_normal(n, k, p):
+  G = nx.watts_strogatz_graph(n, k, p)
+  agent_bels = normal_dist_multiple(7, 3, 1, n, 2)
+  for i in range(n):
+    G.nodes[i]['A'] = agent_bels[i][0]
+    G.nodes[i]['B'] = agent_bels[i][1]
+  return G

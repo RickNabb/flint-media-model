@@ -179,6 +179,7 @@ def believe_message(agent, message, spread_type, brain_type):
       # the rest of the message, they adopt beliefs that they 
       # didn't have
       if m in agent['malleable'] or m in agent_empty_beliefs: agent[m] = message[m]
+      agent['malleable'] += agent_empty_beliefs
 
   elif brain_type == 'continuous':
     for attr in filter(lambda el: el in agent['malleable'], message):
