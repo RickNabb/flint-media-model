@@ -1044,168 +1044,79 @@ def process_belief_spread_exp_results(path):
     'new-beliefs': [PLOT_TYPES.LINE]},
     path)
 
-def belief_spread_exp_results_df(path):
-  '''
-  Process the results of the belief spread experiment into dataframes.
-  This will put each simulation trial into a data frame row with relevant
-  parameters set by the df_columns variable.
-
-  :path: The string path to the raw data files.
-  '''
-  simple_spread_chance = [ '0.01', '0.05']
-  # simple_spread_chance = [ '0.01', '0.05', '0.1', '0.25', '0.5', '0.75' ]
-  ba_m = ['3','10']
-  cit_media_influence = [ '0.01', '0.05', '0.1', '0.25', '0.5', '0.75' ]
-  cit_cit_influence = [ '0.01', '0.05', '0.1', '0.25', '0.5', '0.75' ]
+def base_model_sweep_results_to_df(path):
+  simple_spread_chance = [ '0.01', '0.05', '0.1', '0.25', '0.5', '0.75' ]
+  ba_m = ['1','2','3','5','10','20','50']
+  cit_cit_influence = ['1']
+  cit_media_influence = ['1']
   repetition = ['0','1','2','3','4']
 
   measures = ['new-beliefs']
-  df_columns = { "new-beliefs": ['n','spread-type','simple-spread-chance','graph-type','ba-m','citizen-media-influence','citizen-citizen-influence','flint-community-size','repetition'] }
-  multidata_key_params = ['simple-spread-chance','ba-m','citizen-media-influence','citizen-citizen-influence','repetition']
+  df_columns = { "new-beliefs": ['n','spread-type','simple-spread-chance','graph-type','ba-m','repetition'] }
+  multidata_key_params = ['simple-spread-chance','ba-m','repetition']
 
   (multidata, props, params) = get_all_multidata(
     [simple_spread_chance,ba_m,cit_media_influence,cit_cit_influence,repetition],
-    {'new-beliefs': [PLOT_TYPES.LINE]},
-    path)
-  return multidata_to_dataframes(measures, df_columns, multidata, multidata_key_params, props, params)
-
-def process_trust_connectivity_exp_results_data(path):
-  ba_m = ['3','10','25']
-
-  process_exp_outputs(
-    [ba_m],
-    {'percent-agent-beliefs': [PLOT_TYPES.LINE, PLOT_TYPES.STACK],
-    'new-beliefs': [PLOT_TYPES.LINE]},
-    path)
-
-def trust_connectivity_exp_results_df(path):
-  ba_m = ['3','10','25']
-
-  measures = ['new-beliefs']
-  df_columns = { "new-beliefs": ['n','spread-type','simple-spread-chance','graph-type','ba-m','citizen-media-influence','citizen-citizen-influence','flint-community-size'] }
-  multidata_key_params = ['ba-m']
-
-  (multidata, props, params) = get_all_multidata(
-    [ba_m],
     {'percent-agent-beliefs': [PLOT_TYPES.LINE, PLOT_TYPES.STACK],
     'new-beliefs': [PLOT_TYPES.LINE]},
     path)
   return multidata_to_dataframes(measures, df_columns, multidata, multidata_key_params, props, params)
 
-def gradual_trust_connectivity_exp_results_df(path):
-  ba_m = ['3','10','25']
-  simple_spread_chance = [ '0.1', '0.5' ]
-  cit_cit_influence = ['0.1','0.5']
-  cit_media_gradual_scalar = ['1','2', '5']
-
-  measures = ['new-beliefs']
-  df_columns = { "new-beliefs": ['n','spread-type','simple-spread-chance','graph-type','ba-m','citizen-media-influence','citizen-citizen-influence','citizen-media-gradual-scalar','flint-community-size'] }
-  multidata_key_params = ['simple-spread-chance','ba-m','citizen-media-gradual-scalar','citizen-citizen-influence']
-
-  (multidata, props, params) = get_all_multidata(
-    [simple_spread_chance, ba_m, cit_media_gradual_scalar, cit_cit_influence],
-    {'percent-agent-beliefs': [PLOT_TYPES.LINE, PLOT_TYPES.STACK],
-    'new-beliefs': [PLOT_TYPES.LINE]},
-    path)
-  return multidata_to_dataframes(measures, df_columns, multidata, multidata_key_params, props, params)
-
-def dynamic_organizing_exp_results_df(path):
+def static_influence_sweep_results_to_df(path):
   simple_spread_chance = [ '0.01', '0.05', '0.1', '0.25', '0.5', '0.75' ]
   ba_m = ['3','10']
-  organizing_capacity = ['1','5','10']
-  organizing_strategy = ['neighbors-of-neighbors','high-degree-media','high-degree-citizens','high-degree-cit-and-media']
+  cit_cit_influence = [ '0.01', '0.05', '0.1', '0.25', '0.5', '0.75' ]
+  cit_media_influence = [ '0.01', '0.05', '0.1', '0.25', '0.5', '0.75' ]
   repetition = ['0','1','2','3','4']
 
   measures = ['new-beliefs']
-  df_columns = { "new-beliefs": ['n','spread-type','simple-spread-chance','graph-type','ba-m','organizing-capacity','organizing-strategy','repetition'] }
-  multidata_key_params = ['simple-spread-chance','ba-m','organizing-capacity','organizing-strategy','repetition']
+  df_columns = { "new-beliefs": ['n','spread-type','simple-spread-chance','graph-type','ba-m','cit-media-influence','cit-cit-influence','repetition'] }
+  multidata_key_params = ['simple-spread-chance','ba-m','cit-media-influence','cit-cit-influence','repetition']
 
   (multidata, props, params) = get_all_multidata(
-    [simple_spread_chance, ba_m, organizing_capacity, organizing_strategy,repetition],
+    [simple_spread_chance,ba_m,cit_media_influence,cit_cit_influence,repetition],
     {'percent-agent-beliefs': [PLOT_TYPES.LINE, PLOT_TYPES.STACK],
     'new-beliefs': [PLOT_TYPES.LINE]},
     path)
   return multidata_to_dataframes(measures, df_columns, multidata, multidata_key_params, props, params)
 
-def nondynamic_organizing_exp_results_df(path):
-  simple_spread_chance = [ '0.1', '0.5' ]
+def static_no_organizing_media_connect_sweep_results_to_df(path):
+  simple_spread_chance = [ '0.01', '0.05', '0.1', '0.25', '0.5', '0.75' ]
   ba_m = ['3','10']
-  cit_cit_influence = ['0.25','0.5']
-  cit_media_influence = ['0.25','0.5']
-  organizing_capacity = ['1','5']
-  organizing_strategy = ['neighbors-of-neighbors','high-degree-media','high-degree-citizens','high-degree-cit-and-media']
+  cit_cit_influence = [ '0.01', '0.05', '0.1', '0.25', '0.5', '0.75' ]
+  cit_media_influence = [ '0.01', '0.05', '0.1', '0.25', '0.5', '0.75' ]
+  repetition = ['0','1','2','3','4']
 
   measures = ['new-beliefs']
-  df_columns = { "new-beliefs": ['n','spread-type','simple-spread-chance','graph-type','ba-m','cit-media-influence','cit-cit-influence','organizing-capacity','organizing-strategy'] }
-  multidata_key_params = ['simple-spread-chance','ba-m','cit-media-influence','cit-cit-influence','organizing-capacity','organizing-strategy']
+  df_columns = { "new-beliefs": ['n','spread-type','simple-spread-chance','graph-type','ba-m','cit-media-influence','cit-cit-influence','repetition'] }
+  multidata_key_params = ['simple-spread-chance','ba-m','cit-media-influence','cit-cit-influence','repetition']
 
   (multidata, props, params) = get_all_multidata(
-    [simple_spread_chance,ba_m,cit_media_influence,cit_cit_influence,organizing_capacity,organizing_strategy],
+    [simple_spread_chance,ba_m,cit_media_influence,cit_cit_influence,repetition],
     {'percent-agent-beliefs': [PLOT_TYPES.LINE, PLOT_TYPES.STACK],
     'new-beliefs': [PLOT_TYPES.LINE]},
     path)
   return multidata_to_dataframes(measures, df_columns, multidata, multidata_key_params, props, params)
 
-def process_trust_connectivity_exp_results(path):
-  ba_m = ['3','10','25']
-
-  process_exp_outputs(
-    [ba_m],
-    {'percent-agent-beliefs': [PLOT_TYPES.LINE, PLOT_TYPES.STACK],
-    'new-beliefs': [PLOT_TYPES.LINE]},
-    path)
-
-def process_belief_spread_dynamic_results(path):
-  simple_spread_chance = [ '0.1', '0.5' ]
-  ba_m = ['3','10','25']
-  cit_cit_influence = ['0.1','0.5']
-
-  process_exp_outputs(
-    [simple_spread_chance,ba_m,cit_cit_influence],
-    {'percent-agent-beliefs': [PLOT_TYPES.LINE, PLOT_TYPES.STACK],
-    'new-beliefs': [PLOT_TYPES.LINE]},
-    path)
-
-def process_dynamic_organizing_results(path):
-  # simple_spread_chance = [ '0.01', '0.05', '0.1', '0.25', '0.5', '0.75' ]
-  simple_spread_chance = [ '0.01', '0.05']
+def static_organizing_media_connect_sweep_results_to_df(path):
+  simple_spread_chance = [ '0.01', '0.05', '0.1', '0.25', '0.5', '0.75' ]
   ba_m = ['3','10']
-  organizing_capacity = ['1','5','10']
+  cit_cit_influence = [ '0.01', '0.05', '0.1', '0.25', '0.5', '0.75' ]
+  cit_media_influence = [ '0.01', '0.05', '0.1', '0.25', '0.5', '0.75' ]
+  organizing_capacity = ['1','5']
   organizing_strategy = ['neighbors-of-neighbors','high-degree-media','high-degree-citizens','high-degree-cit-and-media']
   repetition = ['0','1','2','3','4']
 
-  process_exp_outputs(
-    [simple_spread_chance,ba_m,organizing_capacity,organizing_strategy,repetition],
+  measures = ['new-beliefs']
+  df_columns = { "new-beliefs": ['n','spread-type','simple-spread-chance','graph-type','ba-m','cit-media-influence','cit-cit-influence','organizing-capacity','flint-organizing-capacity','repetition'] }
+  multidata_key_params = ['simple-spread-chance','ba-m','cit-media-influence','cit-cit-influence','organizing-capacity','flint-organizing-strategy','repetition']
+
+  (multidata, props, params) = get_all_multidata(
+    [simple_spread_chance,ba_m,cit_media_influence,cit_cit_influence,organizing_capacity,organizing_strategy,repetition],
     {'percent-agent-beliefs': [PLOT_TYPES.LINE, PLOT_TYPES.STACK],
     'new-beliefs': [PLOT_TYPES.LINE]},
     path)
-
-def process_dynamic_organizing_test_results(path):
-  simple_spread_chance = [ '0.01', '0.05' ]
-  ba_m = ['3','10']
-  organizing_capacity = ['1','5','10']
-  organizing_strategy = ['neighbors-of-neighbors','high-degree-media']
-
-  process_exp_outputs(
-    [simple_spread_chance,ba_m,organizing_capacity,organizing_strategy],
-    {'percent-agent-beliefs': [PLOT_TYPES.LINE, PLOT_TYPES.STACK],
-    'new-beliefs': [PLOT_TYPES.LINE]},
-    path)
-
-
-def process_nondynamic_organizing_results(path):
-  simple_spread_chance = [ '0.1', '0.5' ]
-  ba_m = ['3','10']
-  cit_cit_influence = ['0.25','0.5']
-  cit_media_influence = ['0.25','0.5']
-  organizing_capacity = ['1','5']
-  organizing_strategy = ['neighbors-of-neighbors','high-degree-media','high-degree-citizens','high-degree-cit-and-media']
-
-  process_exp_outputs(
-    [simple_spread_chance,ba_m,cit_media_influence,cit_cit_influence,organizing_capacity,organizing_strategy],
-    {'percent-agent-beliefs': [PLOT_TYPES.LINE, PLOT_TYPES.STACK],
-    'new-beliefs': [PLOT_TYPES.LINE]},
-    path)
+  return multidata_to_dataframes(measures, df_columns, multidata, multidata_key_params, props, params)
 
 def multidata_to_dataframes(measures, df_columns, multidata, multidata_key_params, props, params):
   '''
