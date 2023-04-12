@@ -3017,7 +3017,7 @@ carefully [
     py:run (word "create_nested_dirs('" graphs-path "')")
   ]
 ] [ ]
-let graph-file (word graphs-path "/" simple-spread-chance "-" ba-m "-" citizen-media-influence "-" citizen-citizen-influence "-" repetition ".csv")
+let graph-file (word graphs-path "/" simple-spread-chance "-" ba-m "-" citizen-media-influence "-" citizen-citizen-influence "-" organizing-capacity "-" flint-organizing-strategy "-" repetition ".csv")
 ifelse (py:runresult (word "os.path.isfile('" graph-file "')")) [
   set load-graph? true
   set load-graph-path graph-file
@@ -3028,7 +3028,7 @@ ifelse (py:runresult (word "os.path.isfile('" graph-file "')")) [
   setup
   save-graph
 ]
-set contagion-dir (word run-dir "/" simple-spread-chance "/" ba-m "/" citizen-media-influence "/" citizen-citizen-influence "/" repetition)
+set contagion-dir (word run-dir "/" simple-spread-chance "/" ba-m "/" citizen-media-influence "/" citizen-citizen-influence "/" organizing-capacity "/" flint-organizing-strategy "/" repetition)
 carefully [
   if not (py:runresult (word "os.path.isdir('" contagion-dir "')")) [
     py:run (word "create_nested_dirs('" contagion-dir "')")
@@ -3128,103 +3128,6 @@ export-plot "num-new-beliefs" (word contagion-dir "/" behavior-rand "_new-belief
       <value value="0.005"/>
     </enumeratedValueSet>
   </experiment>
-  <experiment name="media-connections-belief-spread-exp" repetitions="5" runMetricsEveryStep="false">
-    <setup>setup
-let run-dir (word sim-output-dir substring date-time-safe 11 (length date-time-safe) "-media-connections-influence-model-sweep")
-let graphs-path (word run-dir "/graphs")
-let graph-file (word graphs-path "/" simple-spread-chance "-" ba-m "-" citizen-media-influence "-" citizen-citizen-influence "-" repetition ".csv")
-ifelse (py:runresult (word "os.path.isfile('" graph-file "')")) [
-  set load-graph? true
-  set load-graph-path graph-file
-  setup
-] [
-  set load-graph? false
-  set save-graph-path graph-file
-  py:run (word "create_nested_dirs('" graphs-path "')")
-  setup
-  save-graph
-]
-
-set contagion-dir (word run-dir "/" simple-spread-chance "/" ba-m "/" citizen-media-influence "/" citizen-citizen-influence "/" repetition)
-py:run (word "create_nested_dirs('" contagion-dir "')")
-set behavior-rand random 10000</setup>
-    <go>go</go>
-    <final>export-world (word contagion-dir "/" behavior-rand "_world.csv")
-export-plot "percent-agent-beliefs" (word contagion-dir "/" behavior-rand "_percent-agent-beliefs.csv")
-export-plot "num-new-beliefs" (word contagion-dir "/" behavior-rand "_new-beliefs.csv")</final>
-    <timeLimit steps="300"/>
-    <metric>count citizens</metric>
-    <enumeratedValueSet variable="contagion-on?">
-      <value value="true"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="dynamic-cit-cit-influence?">
-      <value value="false"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="dynamic-cit-media-influence?">
-      <value value="false"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="media-monitor-peers?">
-      <value value="true"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="flint-organizing?">
-      <value value="false"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="load-graph?">
-      <value value="false"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="media-agents?">
-      <value value="true"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="belief-resolution">
-      <value value="7"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="brain-type">
-      <value value="&quot;discrete&quot;"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="N">
-      <value value="300"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="tick-end">
-      <value value="300"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="spread-type">
-      <value value="&quot;simple&quot;"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="simple-spread-chance">
-      <value value="0.01"/>
-      <value value="0.05"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="graph-type">
-      <value value="&quot;barabasi-albert&quot;"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="ba-m">
-      <value value="3"/>
-      <value value="10"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="epsilon">
-      <value value="0"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="citizen-media-influence">
-      <value value="0.01"/>
-      <value value="0.05"/>
-      <value value="0.1"/>
-      <value value="0.25"/>
-      <value value="0.5"/>
-      <value value="0.75"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="citizen-citizen-influence">
-      <value value="0.01"/>
-      <value value="0.05"/>
-      <value value="0.1"/>
-      <value value="0.25"/>
-      <value value="0.5"/>
-      <value value="0.75"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="flint-community-size">
-      <value value="0.005"/>
-    </enumeratedValueSet>
-    <steppedValueSet variable="repetition" first="0" step="1" last="4"/>
-  </experiment>
   <experiment name="base-model-sweep" repetitions="30" runMetricsEveryStep="false">
     <setup>setup-py
 let run-dir (word sim-output-dir substring date-time-safe 11 (length date-time-safe) "-base-model-sweep")
@@ -3306,11 +3209,13 @@ export-plot "num-new-beliefs" (word contagion-dir "/" behavior-rand "_new-belief
       <value value="&quot;barabasi-albert&quot;"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="ba-m">
+      <value value="1"/>
+      <value value="2"/>
       <value value="3"/>
+      <value value="5"/>
       <value value="10"/>
       <value value="20"/>
       <value value="50"/>
-      <value value="100"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="epsilon">
       <value value="0"/>
@@ -3445,7 +3350,7 @@ carefully [
     py:run (word "create_nested_dirs('" graphs-path "')")
   ]
 ] [ ]
-let graph-file (word graphs-path "/" simple-spread-chance "-" ba-m "-" citizen-media-influence "-" citizen-citizen-influence "-" repetition ".csv")
+let graph-file (word graphs-path "/" simple-spread-chance "-" ba-m "-" citizen-media-influence "-" citizen-citizen-influence "-" organizing-capacity "-" flint-organizing-strategy "-" repetition ".csv")
 ifelse (py:runresult (word "os.path.isfile('" graph-file "')")) [
   set load-graph? true
   set load-graph-path graph-file
@@ -3456,7 +3361,7 @@ ifelse (py:runresult (word "os.path.isfile('" graph-file "')")) [
   setup
   save-graph
 ]
-set contagion-dir (word run-dir "/" simple-spread-chance "/" ba-m "/" citizen-media-influence "/" citizen-citizen-influence "/" repetition)
+set contagion-dir (word run-dir "/" simple-spread-chance "/" ba-m "/" citizen-media-influence "/" citizen-citizen-influence "/" organizing-capacity "/" flint-organizing-strategy "/" repetition)
 carefully [
   if not (py:runresult (word "os.path.isdir('" contagion-dir "')")) [
     py:run (word "create_nested_dirs('" contagion-dir "')")
