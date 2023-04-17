@@ -1151,3 +1151,29 @@ def multidata_to_dataframes(measures, df_columns, multidata, multidata_key_param
         df.loc[len(df.index)] = data_row + [data_point]
   
   return dfs
+
+def add_graph_data_to_dataframe(df, columns, path):
+  '''
+  Add pieces of graph data to an existing experiment dataframe. This
+  loops through all parameter combinations for given columns
+  based on the combinations present in the dataframe.
+
+  :param df: An experiment result data frame to add data to.
+  :param columns: The parameters to use for filename generation to read
+  in graph data.
+  :param path: The directory to look for graph data in.
+  '''
+  new_df = df.copy()
+  new_cols = {
+    'num_media': []
+  }
+  for row in df.iterrows():
+    data = row[0]
+    col_values = [ data[col] for col in columns ]
+    col_string = '-'.join(col_values)
+    (cit, cit_social, media_arr, media_sub_arr) = read_graph(f'{path}/{col_string}.csv')
+    new_cols['num_media'].append(len(media_arr))
+  for key, val in new_cols.items():
+    new_df[key] = val
+  return new_df
+    
