@@ -1903,7 +1903,7 @@ INPUTBOX
 242
 555
 load-graph-path
-C:/Users/nrabb_000/Documents/school/grad-school/Tufts/research/projects/flint-media-model/simulation-data/test.csv
+D:/school/grad-school/Tufts/research/flint-media-model/simulation-data/18-Apr-2023-static-no-organizing-media-connect-sweep/graphs/0.5-3-0.75-0.75-4.csv
 1
 0
 String
@@ -1914,7 +1914,7 @@ INPUTBOX
 244
 622
 save-graph-path
-C:/Users/nrabb_000/Documents/school/grad-school/Tufts/research/projects/flint-media-model/simulation-data/test.csv
+D:/school/grad-school/Tufts/research/flint-media-model/simulation-data/18-Apr-2023-static-no-organizing-media-connect-sweep/graphs/0.5-3-0.75-0.25-4.csv
 1
 0
 String
@@ -1955,7 +1955,7 @@ simple-spread-chance
 simple-spread-chance
 0
 1
-0.05
+0.5
 0.01
 1
 NIL
@@ -1995,7 +1995,7 @@ tick-end
 tick-end
 30
 1000
-100.0
+114.0
 1
 1
 NIL
@@ -2234,7 +2234,7 @@ ba-m
 ba-m
 0
 50
-10.0
+3.0
 1
 1
 NIL
@@ -2285,7 +2285,7 @@ citizen-citizen-influence
 citizen-citizen-influence
 0
 1
-0.1
+0.75
 0.01
 1
 NIL
@@ -2300,7 +2300,7 @@ citizen-media-influence
 citizen-media-influence
 0
 1
-0.1
+0.75
 0.01
 1
 NIL
@@ -2371,7 +2371,7 @@ SWITCH
 348
 dynamic-cit-media-influence?
 dynamic-cit-media-influence?
-0
+1
 1
 -1000
 
@@ -2498,7 +2498,7 @@ SWITCH
 391
 dynamic-cit-cit-influence?
 dynamic-cit-cit-influence?
-0
+1
 1
 -1000
 
@@ -3340,6 +3340,7 @@ export-plot "num-new-beliefs" (word contagion-dir "/" behavior-rand "_new-belief
     <enumeratedValueSet variable="flint-community-size">
       <value value="0.005"/>
     </enumeratedValueSet>
+    <steppedValueSet variable="repetition" first="0" step="1" last="4"/>
   </experiment>
   <experiment name="static-organizing-media-connect-sweep" repetitions="30" sequentialRunOrder="false" runMetricsEveryStep="false">
     <setup>setup-py
