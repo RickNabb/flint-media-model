@@ -1168,7 +1168,7 @@ def add_graph_data_to_dataframe(df, columns, path):
     'num_media': []
   }
   for row in df.iterrows():
-    data = row[0]
+    data = row[1]
     col_values = [ data[col] for col in columns ]
     col_string = '-'.join(col_values)
     (cit, cit_social, media_arr, media_sub_arr) = read_graph(f'{path}/{col_string}.csv')
