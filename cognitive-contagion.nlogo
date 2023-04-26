@@ -3439,7 +3439,7 @@ export-plot "num-new-beliefs" (word contagion-dir "/" behavior-rand "_new-belief
     </enumeratedValueSet>
     <steppedValueSet variable="repetition" first="0" step="1" last="4"/>
   </experiment>
-  <experiment name="static-organizing-media-connect-sweep" repetitions="30" sequentialRunOrder="false" runMetricsEveryStep="false">
+  <experiment name="static-organizing-media-connect-sweep" repetitions="10" sequentialRunOrder="false" runMetricsEveryStep="false">
     <setup>setup-py
 let run-dir (word sim-output-dir substring date-time-safe 11 (length date-time-safe) "-static-organizing-media-connect-sweep")
 let graphs-path (word run-dir "/graphs")
@@ -3558,6 +3558,7 @@ export-plot "num-new-beliefs" (word contagion-dir "/" behavior-rand "_new-belief
     <enumeratedValueSet variable="flint-community-size">
       <value value="0.005"/>
     </enumeratedValueSet>
+    <steppedValueSet variable="repetition" first="0" step="1" last="2"/>
   </experiment>
 </experiments>
 @#$#@#$#@
