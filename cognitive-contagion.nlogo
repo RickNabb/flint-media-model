@@ -2904,7 +2904,7 @@ NetLogo 6.1.1
 <experiments>
   <experiment name="static-influence-sweep" repetitions="30" runMetricsEveryStep="false">
     <setup>setup-py
-let run-dir (word sim-output-dir substring date-time-safe 11 (length date-time-safe) "-static-influence-sweep")
+let run-dir (word sim-output-dir "static-influence-sweep")
 let graphs-path (word run-dir "/graphs")
 carefully [
   if not (py:runresult (word "os.path.isdir('" graphs-path "')")) [
@@ -3012,7 +3012,7 @@ export-plot "num-new-beliefs" (word contagion-dir "/" behavior-rand "_new-belief
   </experiment>
   <experiment name="static-organizing-sweep" repetitions="30" runMetricsEveryStep="false">
     <setup>setup-py
-let run-dir (word sim-output-dir substring date-time-safe 11 (length date-time-safe) "-static-organizing-sweep")
+let run-dir (word sim-output-dir "static-organizing-sweep")
 let graphs-path (word run-dir "/graphs")
 carefully [
   if not (py:runresult (word "os.path.isdir('" graphs-path "')")) [
@@ -3132,7 +3132,7 @@ export-plot "num-new-beliefs" (word contagion-dir "/" behavior-rand "_new-belief
   </experiment>
   <experiment name="base-model-sweep" repetitions="30" runMetricsEveryStep="false">
     <setup>setup-py
-let run-dir (word sim-output-dir substring date-time-safe 11 (length date-time-safe) "-base-model-sweep")
+let run-dir (word sim-output-dir "base-model-sweep")
 let graphs-path (word run-dir "/graphs")
 carefully [
   if not (py:runresult (word "os.path.isdir('" graphs-path "')")) [
@@ -3233,7 +3233,7 @@ export-plot "num-new-beliefs" (word contagion-dir "/" behavior-rand "_new-belief
   </experiment>
   <experiment name="static-no-organizing-media-connect-sweep" repetitions="30" runMetricsEveryStep="false">
     <setup>setup-py
-let run-dir (word sim-output-dir substring date-time-safe 11 (length date-time-safe) "-static-no-organizing-media-connect-sweep")
+let run-dir (word sim-output-dir "static-no-organizing-media-connect-sweep")
 let graphs-path (word run-dir "/graphs")
 carefully [
   if not (py:runresult (word "os.path.isdir('" graphs-path "')")) [
@@ -3344,7 +3344,7 @@ export-plot "num-new-beliefs" (word contagion-dir "/" behavior-rand "_new-belief
   </experiment>
   <experiment name="static-organizing-media-connect-sweep" repetitions="10" runMetricsEveryStep="false">
     <setup>setup-py
-let run-dir (word sim-output-dir substring date-time-safe 11 (length date-time-safe) "-static-organizing-media-connect-sweep")
+let run-dir (word sim-output-dir "static-organizing-media-connect-sweep")
 let graphs-path (word run-dir "/graphs")
 carefully [
   if not (py:runresult (word "os.path.isdir('" graphs-path "')")) [
