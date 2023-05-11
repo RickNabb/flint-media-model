@@ -6,6 +6,7 @@ from statistics import mean, variance, mode
 from copy import deepcopy
 from plotting import *
 from nlogo_colors import *
+from nlogo_graphs import nlogo_graph_to_nx_with_media
 import itertools
 import pandas as pd
 import os
@@ -393,16 +394,16 @@ in the process. This should usually be the name of the chart in the NetLogo file
 def process_multi_chart_data(in_path, in_filename='percent-agent-beliefs'):
   props = []
   multi_data = []
-  rand_ids = []
+  run_ids = []
   print(f'process_multi_chart_data for {in_path}/{in_filename}')
   for file in os.listdir(in_path):
     if in_filename in file:
-      rand_id = file[0: file.index('_')]
+      run_id = file[0: file.index('_')]
       data = process_chart_data(f'{in_path}/{file}')
       model_params = data[0]
       props.append(data[1])
       multi_data.append(data[2])
-      rand_ids.append(rand_id)
+      run_ids.append(run_id)
 
   means = { key: [] for key in multi_data[0].keys() }
   vector_length = int(model_params['tick-end'])
@@ -425,7 +426,7 @@ def process_multi_chart_data(in_path, in_filename='percent-agent-beliefs'):
   final_props = props[0]
   props_y_max = np.array([ float(prop['y max']) for prop in props ])
   final_props['y max'] = props_y_max.max()
-  return (means, final_props, model_params, rand_ids)
+  return (means, final_props, model_params, run_ids)
 
 '''
 Given some multi-chart data, plot it and save the plot.
@@ -974,22 +975,31 @@ def plot_chi_sq_data(chi2_data, props, title, out_path, out_filename):
   plt.close()
 
 def analyze_spread_peak(df, columns, sim_output_dir):
+  analyzed_data = {}
+  print('test')
   for row in df.iterrows():
     data = row[1]
     col_values = [ data[col] for col in columns ]
     col_string = '-'.join(col_values)
+
     # Read in the graph
-    (cit, cit_social, media_arr, media_sub_arr) = read_graph(f'{sim_output_dir}/graphs/{col_string}.csv')
+    (cit, cit_social, media_arr, media_sub_arr)= read_graph(f'{sim_output_dir}/graphs/{col_string}.csv')
+    graph = nlogo_graph_to_nx_with_media(cit, cit_social, media_arr, media_sub_arr)
     # Read in the adoption data
     col_dir_string = '/'.join(col_values)
 
-    with open(f'{sim_output_dir}/{col_dir_string}/{rand}_messages_adopted.json','r') as f:
+    adoption_data = None
+    with open(f'{sim_output_dir}/{col_dir_string}/{data["run_id"]}_messages_adopted.json','r') as f:
       adoption_data = json.load(f)
-
-
+    
+    analyzed_data[data['run_id']] = analyze_spread_peak(data, adoption_data, graph)
+  return analyzed_data
 
 def analyze_spread_peak(spread_data, adoption_data, graph):
-  return -1
+  peak_tick = list(spread_data).index(max(spread_data))
+  around_peak_threshold = 3
+  adopters_around_peak = { tick: adopters for tick,adopters in adoption_data.items() if (tick >= peak_tick - around_peak_threshold and tick <= peak_tick + around_peak_threshold) }
+  return adopters_around_peak
 
 """
 ##################
@@ -1042,9 +1052,9 @@ def get_all_multidata(param_combos, plots, path):
   for combo in combos:
     for (plot_name, plot_types) in plots.items():
       # print(plot_name, plot_types)
-      (multi_data, props, model_params, rand_ids) = process_multi_chart_data(f'{path}/{"/".join(combo)}', plot_name)
+      (multi_data, props, model_params, run_ids) = process_multi_chart_data(f'{path}/{"/".join(combo)}', plot_name)
       multi_datas[(combo,plot_name)] = multi_data
-      multi_data_ids[(combo,plot_name)] = rand_ids
+      multi_data_ids[(combo,plot_name)] = run_ids
   return (multi_datas, props, model_params, multi_data_ids)
 
 def process_belief_spread_exp_test_results(path):
@@ -1185,7 +1195,7 @@ def multidata_to_dataframes(measures, df_columns, multidata, multidata_key_param
   per param combo and graph name.
   '''
 
-  dfs = { measure: pd.DataFrame(columns=df_columns[measure]+['data','rand_id']) for measure in measures }
+  dfs = { measure: pd.DataFrame(columns=df_columns[measure]+['data','run_id']) for measure in measures }
 
   for measure in measures:
     data = { key: value for (key,value) in multidata.items() if key[1] == measure }
