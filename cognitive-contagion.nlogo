@@ -1299,6 +1299,13 @@ to-report media-peer-connections
   )
 end
 
+;; Write out the adoption-related data that the simulation has stored
+to output-adoption-data [ path uniqueid ]
+  let messages-adopted-py-str (list-as-py-array (map [ tick-entry -> (word (item 0 tick-entry) ": " list-as-py-dict (item 1 tick-entry) true true) ] agents-adopted-by-tick) false)
+  let messages-adopted-py (word "{" (substring messages-adopted-py-str 1 ((length messages-adopted-py-str) - 1)) "}" )
+  py:run (word "write_message_data('" path "'," "'" uniqueid "'," messages-adopted-py ")")
+end
+
 ;;;;;;;;;;;;;;;
 ; HELPER PROCS
 ;;;;;;;;;;;;;;;
@@ -2947,7 +2954,8 @@ carefully [
     <final>set behavior-rand random 10000
 export-world (word contagion-dir "/" behavior-rand "_world.csv")
 export-plot "percent-agent-beliefs" (word contagion-dir "/" behavior-rand "_percent-agent-beliefs.csv")
-export-plot "num-new-beliefs" (word contagion-dir "/" behavior-rand "_new-beliefs.csv")</final>
+export-plot "num-new-beliefs" (word contagion-dir "/" behavior-rand "_new-beliefs.csv")
+output-adoption-data contagion-dir behavior-rand</final>
     <timeLimit steps="114"/>
     <metric>count citizens</metric>
     <enumeratedValueSet variable="contagion-on?">
@@ -3477,6 +3485,101 @@ export-plot "num-new-beliefs" (word contagion-dir "/" behavior-rand "_new-belief
       <value value="0.005"/>
     </enumeratedValueSet>
     <steppedValueSet variable="repetition" first="0" step="1" last="2"/>
+  </experiment>
+  <experiment name="static-influence-monte-carlo-1" repetitions="10" runMetricsEveryStep="false">
+    <setup>setup-py
+let run-dir (word sim-output-dir "static-influence-monte-carlo-1")
+let graphs-path (word run-dir "/graphs")
+carefully [
+  if not (py:runresult (word "os.path.isdir('" graphs-path "')")) [
+    py:run (word "create_nested_dirs('" graphs-path "')")
+  ]
+] [ ]
+let graph-file (word graphs-path "/" simple-spread-chance "-" ba-m "-" citizen-media-influence "-" citizen-citizen-influence "-" repetition ".csv")
+ifelse (py:runresult (word "os.path.isfile('" graph-file "')")) [
+  set load-graph? true
+  set load-graph-path graph-file
+  setup
+] [
+  set load-graph? false
+  set save-graph-path graph-file
+  setup
+  save-graph
+]
+set contagion-dir (word run-dir "/" simple-spread-chance "/" ba-m "/" citizen-media-influence "/" citizen-citizen-influence "/" repetition)
+carefully [
+  if not (py:runresult (word "os.path.isdir('" contagion-dir "')")) [
+    py:run (word "create_nested_dirs('" contagion-dir "')")
+  ]
+] [ ]</setup>
+    <go>go</go>
+    <final>set behavior-rand random 10000
+export-world (word contagion-dir "/" behavior-rand "_world.csv")
+export-plot "percent-agent-beliefs" (word contagion-dir "/" behavior-rand "_percent-agent-beliefs.csv")
+export-plot "num-new-beliefs" (word contagion-dir "/" behavior-rand "_new-beliefs.csv")
+output-adoption-data contagion-dir behavior-rand</final>
+    <timeLimit steps="114"/>
+    <metric>count citizens</metric>
+    <enumeratedValueSet variable="contagion-on?">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="dynamic-cit-cit-influence?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="dynamic-cit-media-influence?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="media-monitor-peers?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="flint-organizing?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="load-graph?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="media-agents?">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="belief-resolution">
+      <value value="7"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="brain-type">
+      <value value="&quot;discrete&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="N">
+      <value value="300"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="tick-end">
+      <value value="114"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="spread-type">
+      <value value="&quot;simple&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="simple-spread-chance">
+      <value value="0.75"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="graph-type">
+      <value value="&quot;barabasi-albert&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="ba-m">
+      <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="epsilon">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="citizen-media-influence">
+      <value value="0.01"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="citizen-citizen-influence">
+      <value value="0.75"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="flint-community-size">
+      <value value="0.005"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="repetition">
+      <value value="0"/>
+    </enumeratedValueSet>
   </experiment>
 </experiments>
 @#$#@#$#@
