@@ -14,6 +14,7 @@ from scipy.stats import chi2_contingency, truncnorm
 from sklearn.linear_model import LinearRegression
 import math
 import matplotlib.pyplot as plt
+import json
 
 """
 BELIEF ATTRIBUTES
@@ -303,6 +304,12 @@ def read_graph(path):
         i += 1
     return (cit, cit_social, media_arr, media_sub_arr)
 
+def write_message_data(path, filename, messages_adopted):
+  '''
+  '''
+  messages_adopted_py = { int(tick): adopter_sender_pair_dict for tick, adopter_sender_pair_dict in messages_adopted.items() }
+  with open(f'{path}/{filename}_messages_adopted.json', 'w', encoding='utf-8') as f:
+    json.dump(messages_adopted_py, f, ensure_ascii=False)
 
 """
 ANALYSIS FUNCTIONS
@@ -386,13 +393,16 @@ in the process. This should usually be the name of the chart in the NetLogo file
 def process_multi_chart_data(in_path, in_filename='percent-agent-beliefs'):
   props = []
   multi_data = []
+  rand_ids = []
   print(f'process_multi_chart_data for {in_path}/{in_filename}')
   for file in os.listdir(in_path):
     if in_filename in file:
+      rand_id = file[0: file.index('_')]
       data = process_chart_data(f'{in_path}/{file}')
       model_params = data[0]
       props.append(data[1])
       multi_data.append(data[2])
+      rand_ids.append(rand_id)
 
   means = { key: [] for key in multi_data[0].keys() }
   vector_length = int(model_params['tick-end'])
@@ -415,7 +425,7 @@ def process_multi_chart_data(in_path, in_filename='percent-agent-beliefs'):
   final_props = props[0]
   props_y_max = np.array([ float(prop['y max']) for prop in props ])
   final_props['y max'] = props_y_max.max()
-  return (means, final_props, model_params)
+  return (means, final_props, model_params, rand_ids)
 
 '''
 Given some multi-chart data, plot it and save the plot.
@@ -963,6 +973,24 @@ def plot_chi_sq_data(chi2_data, props, title, out_path, out_filename):
   plt.savefig(f'{out_path}/{out_filename}')
   plt.close()
 
+def analyze_spread_peak(df, columns, sim_output_dir):
+  for row in df.iterrows():
+    data = row[1]
+    col_values = [ data[col] for col in columns ]
+    col_string = '-'.join(col_values)
+    # Read in the graph
+    (cit, cit_social, media_arr, media_sub_arr) = read_graph(f'{sim_output_dir}/graphs/{col_string}.csv')
+    # Read in the adoption data
+    col_dir_string = '/'.join(col_values)
+
+    with open(f'{sim_output_dir}/{col_dir_string}/{rand}_messages_adopted.json','r') as f:
+      adoption_data = json.load(f)
+
+
+
+def analyze_spread_peak(spread_data, adoption_data, graph):
+  return -1
+
 """
 ##################
 EXPERIMENT-SPECIFIC
@@ -1010,12 +1038,14 @@ def get_all_multidata(param_combos, plots, path):
     os.mkdir(f'{path}/results')
 
   multi_datas = {}
+  multi_data_ids = {}
   for combo in combos:
     for (plot_name, plot_types) in plots.items():
       # print(plot_name, plot_types)
-      (multi_data, props, model_params) = process_multi_chart_data(f'{path}/{"/".join(combo)}', plot_name)
+      (multi_data, props, model_params, rand_ids) = process_multi_chart_data(f'{path}/{"/".join(combo)}', plot_name)
       multi_datas[(combo,plot_name)] = multi_data
-  return (multi_datas, props, model_params)
+      multi_data_ids[(combo,plot_name)] = rand_ids
+  return (multi_datas, props, model_params, multi_data_ids)
 
 def process_belief_spread_exp_test_results(path):
   simple_spread_chance = [ '0.5' ]
@@ -1055,12 +1085,30 @@ def base_model_sweep_results_to_df(path):
   df_columns = { "new-beliefs": ['n','spread-type','simple-spread-chance','graph-type','ba-m','repetition'] }
   multidata_key_params = ['simple-spread-chance','ba-m','repetition']
 
-  (multidata, props, params) = get_all_multidata(
+  (multidata, props, params, multidata_ids) = get_all_multidata(
     [simple_spread_chance,ba_m,cit_media_influence,cit_cit_influence,repetition],
     {'percent-agent-beliefs': [PLOT_TYPES.LINE, PLOT_TYPES.STACK],
     'new-beliefs': [PLOT_TYPES.LINE]},
     path)
-  return multidata_to_dataframes(measures, df_columns, multidata, multidata_key_params, props, params)
+  return multidata_to_dataframes(measures, df_columns, multidata, multidata_key_params, props, params, multidata_ids)
+
+def static_influence_monte_carlo_1_results_to_df(path):
+  simple_spread_chance = [ '0.75' ]
+  ba_m = ['10']
+  cit_cit_influence = [ '0.75' ]
+  cit_media_influence = [ '0.01']
+  repetition = ['0']
+
+  measures = ['new-beliefs']
+  df_columns = { "new-beliefs": ['n','spread-type','simple-spread-chance','graph-type','ba-m','cit-media-influence','cit-cit-influence','repetition'] }
+  multidata_key_params = ['simple-spread-chance','ba-m','cit-media-influence','cit-cit-influence','repetition']
+
+  (multidata, props, params, multidata_ids) = get_all_multidata(
+    [simple_spread_chance,ba_m,cit_media_influence,cit_cit_influence,repetition],
+    {'percent-agent-beliefs': [PLOT_TYPES.LINE, PLOT_TYPES.STACK],
+    'new-beliefs': [PLOT_TYPES.LINE]},
+    path)
+  return multidata_to_dataframes(measures, df_columns, multidata, multidata_key_params, props, params, multidata_ids)
 
 def static_influence_sweep_results_to_df(path):
   simple_spread_chance = [ '0.01', '0.05', '0.1', '0.25', '0.5', '0.75' ]
@@ -1073,12 +1121,12 @@ def static_influence_sweep_results_to_df(path):
   df_columns = { "new-beliefs": ['n','spread-type','simple-spread-chance','graph-type','ba-m','cit-media-influence','cit-cit-influence','repetition'] }
   multidata_key_params = ['simple-spread-chance','ba-m','cit-media-influence','cit-cit-influence','repetition']
 
-  (multidata, props, params) = get_all_multidata(
+  (multidata, props, params, multidata_ids) = get_all_multidata(
     [simple_spread_chance,ba_m,cit_media_influence,cit_cit_influence,repetition],
     {'percent-agent-beliefs': [PLOT_TYPES.LINE, PLOT_TYPES.STACK],
     'new-beliefs': [PLOT_TYPES.LINE]},
     path)
-  return multidata_to_dataframes(measures, df_columns, multidata, multidata_key_params, props, params)
+  return multidata_to_dataframes(measures, df_columns, multidata, multidata_key_params, props, params, multidata_ids)
 
 def static_no_organizing_media_connect_sweep_results_to_df(path):
   simple_spread_chance = [ '0.01', '0.05', '0.1', '0.25', '0.5', '0.75' ]
@@ -1091,12 +1139,12 @@ def static_no_organizing_media_connect_sweep_results_to_df(path):
   df_columns = { "new-beliefs": ['n','spread-type','simple-spread-chance','graph-type','ba-m','cit-media-influence','cit-cit-influence','repetition'] }
   multidata_key_params = ['simple-spread-chance','ba-m','cit-media-influence','cit-cit-influence','repetition']
 
-  (multidata, props, params) = get_all_multidata(
+  (multidata, props, params, multidata_ids) = get_all_multidata(
     [simple_spread_chance,ba_m,cit_media_influence,cit_cit_influence,repetition],
     {'percent-agent-beliefs': [PLOT_TYPES.LINE, PLOT_TYPES.STACK],
     'new-beliefs': [PLOT_TYPES.LINE]},
     path)
-  return multidata_to_dataframes(measures, df_columns, multidata, multidata_key_params, props, params)
+  return multidata_to_dataframes(measures, df_columns, multidata, multidata_key_params, props, params, multidata_ids)
 
 def static_organizing_media_connect_sweep_results_to_df(path):
   simple_spread_chance = [ '0.01', '0.05', '0.1', '0.25', '0.5', '0.75' ]
@@ -1111,14 +1159,14 @@ def static_organizing_media_connect_sweep_results_to_df(path):
   df_columns = { "new-beliefs": ['n','spread-type','simple-spread-chance','graph-type','ba-m','cit-media-influence','cit-cit-influence','organizing-capacity','flint-organizing-capacity','repetition'] }
   multidata_key_params = ['simple-spread-chance','ba-m','cit-media-influence','cit-cit-influence','organizing-capacity','flint-organizing-strategy','repetition']
 
-  (multidata, props, params) = get_all_multidata(
+  (multidata, props, params, multidata_ids) = get_all_multidata(
     [simple_spread_chance,ba_m,cit_media_influence,cit_cit_influence,organizing_capacity,organizing_strategy,repetition],
     {'percent-agent-beliefs': [PLOT_TYPES.LINE, PLOT_TYPES.STACK],
     'new-beliefs': [PLOT_TYPES.LINE]},
     path)
-  return multidata_to_dataframes(measures, df_columns, multidata, multidata_key_params, props, params)
+  return multidata_to_dataframes(measures, df_columns, multidata, multidata_key_params, props, params, multidata_ids)
 
-def multidata_to_dataframes(measures, df_columns, multidata, multidata_key_params, props, params):
+def multidata_to_dataframes(measures, df_columns, multidata, multidata_key_params, props, params, multidata_ids):
   '''
   Convert experiment multidata into a usable dataframe format. This
   returns a dictionary of dataframes keyed by measure name (the name
@@ -1133,9 +1181,11 @@ def multidata_to_dataframes(measures, df_columns, multidata, multidata_key_param
   varied during the experiment, and are used as keys for the multidata.
   :param props:
   :param params: Simulation parameters for the experiment.
+  :param multidata_ids: Random ids generated for each multidata run
+  per param combo and graph name.
   '''
 
-  dfs = { measure: pd.DataFrame(columns=df_columns[measure]+['data']) for measure in measures }
+  dfs = { measure: pd.DataFrame(columns=df_columns[measure]+['data','rand_id']) for measure in measures }
 
   for measure in measures:
     data = { key: value for (key,value) in multidata.items() if key[1] == measure }
@@ -1146,9 +1196,10 @@ def multidata_to_dataframes(measures, df_columns, multidata, multidata_key_param
       # TODO: Maybe this should be generalized somehow to incorporate
       # different pen names?
       data_points = data_points['default']
-      for data_point in data_points:
+      for i in range(len(data_points)):
+        data_point = data_points[i]
         data_row = [ param_combo[multidata_key_params.index(col)] if col in multidata_key_params else params[col] for col in df_columns[measure] ]
-        df.loc[len(df.index)] = data_row + [data_point]
+        df.loc[len(df.index)] = data_row + [data_point,multidata_ids[param_measure_combo][i]]
   
   return dfs
 
