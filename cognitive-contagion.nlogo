@@ -39,6 +39,7 @@ globals [
 
   ;; Agents who believed at t-1
   num-agents-adopted
+  agents-adopted-by-tick
 ]
 
 citizens-own [
@@ -81,6 +82,8 @@ to setup
   ;; Set the priors and malleables for each citizen
   set citizen-priors []
   set citizen-malleables [ "Attributes.A" ]
+
+  set agents-adopted-by-tick []
 
   ask patches [
     set pcolor white
@@ -434,7 +437,7 @@ to step
 ;  if (ticks mod 5) = 0 [
 ;    set num-agents-adopted 0
 ;  ]
-  show (word "last num agents adopted: " num-agents-adopted)
+;  show (word "last num agents adopted: " num-agents-adopted)
   set num-agents-adopted 0
   if cit-media-gradual? [ set-cit-media-over-time ]
   if flint-organizing? [
@@ -723,8 +726,20 @@ to receive-message [ cit sender message message-id ]
               receive-message self cit non-empty-message message-id
             ]
           ] [
-            show (word "believed message from brain " (dict-value b "A") " to " (dict-value brain "A"))
+;            show (word "believed message from brain " (dict-value b "A") " to " (dict-value brain "A"))
             set num-agents-adopted num-agents-adopted + 1
+            let agents-adopted-at-tick (dict-value agents-adopted-by-tick ticks)
+            ifelse agents-adopted-at-tick = -1 [
+              let adopter-sender-pair (list self sender)
+              let adoptions-at-tick (list ticks (list adopter-sender-pair))
+              set agents-adopted-by-tick (lput adoptions-at-tick agents-adopted-by-tick)
+;              show (word "set agents-adopted-by-tick new entry" agents-adopted-by-tick)
+            ] [
+              let adopter-sender-pair (list self sender)
+              let new-agents-adopted-at-tick (list ticks (lput adopter-sender-pair agents-adopted-at-tick))
+              set agents-adopted-by-tick (replace-dict-item agents-adopted-by-tick ticks new-agents-adopted-at-tick)
+;              show (word "added agents-adopted-by-tick entry" agents-adopted-by-tick)
+            ]
           ]
         ]
       ]
@@ -2536,7 +2551,7 @@ SWITCH
 247
 media-monitor-peers?
 media-monitor-peers?
-0
+1
 1
 -1000
 
