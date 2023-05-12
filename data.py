@@ -6,7 +6,7 @@ from statistics import mean, variance, mode
 from copy import deepcopy
 from plotting import *
 from nlogo_colors import *
-from nlogo_graphs import nlogo_graph_to_nx_with_media
+from nlogo_graphs import read_graph_to_nx_with_media
 import itertools
 import pandas as pd
 import os
@@ -974,9 +974,8 @@ def plot_chi_sq_data(chi2_data, props, title, out_path, out_filename):
   plt.savefig(f'{out_path}/{out_filename}')
   plt.close()
 
-def analyze_spread_peak(df, columns, sim_output_dir):
+def analyze_spread_peak_df(df, columns, sim_output_dir):
   analyzed_data = {}
-  print('test')
   for row in df.iterrows():
     data = row[1]
     col_values = [ data[col] for col in columns ]
@@ -984,7 +983,7 @@ def analyze_spread_peak(df, columns, sim_output_dir):
 
     # Read in the graph
     (cit, cit_social, media_arr, media_sub_arr)= read_graph(f'{sim_output_dir}/graphs/{col_string}.csv')
-    graph = nlogo_graph_to_nx_with_media(cit, cit_social, media_arr, media_sub_arr)
+    graph = read_graph_to_nx_with_media(cit, cit_social, media_arr, media_sub_arr)
     # Read in the adoption data
     col_dir_string = '/'.join(col_values)
 
@@ -992,10 +991,11 @@ def analyze_spread_peak(df, columns, sim_output_dir):
     with open(f'{sim_output_dir}/{col_dir_string}/{data["run_id"]}_messages_adopted.json','r') as f:
       adoption_data = json.load(f)
     
-    analyzed_data[data['run_id']] = analyze_spread_peak(data, adoption_data, graph)
+    analyzed_data[data['run_id']] = analyze_spread_peak(data['data'], adoption_data, graph)
   return analyzed_data
 
 def analyze_spread_peak(spread_data, adoption_data, graph):
+  adoption_data = { int(tick): adopters for tick,adopters in adoption_data.items() }
   peak_tick = list(spread_data).index(max(spread_data))
   around_peak_threshold = 3
   adopters_around_peak = { tick: adopters for tick,adopters in adoption_data.items() if (tick >= peak_tick - around_peak_threshold and tick <= peak_tick + around_peak_threshold) }
