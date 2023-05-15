@@ -11,6 +11,7 @@ import itertools
 import pandas as pd
 import os
 import numpy as np
+import networkx as nx
 from scipy.stats import chi2_contingency, truncnorm
 from sklearn.linear_model import LinearRegression
 import math
@@ -995,7 +996,20 @@ def analyze_spread_peak_df(df, columns, sim_output_dir):
   return analyzed_data
 
 def analyze_spread_peak(spread_data, adoption_data, graph):
-  adoption_data = { int(tick): adopters for tick,adopters in adoption_data.items() }
+  '''
+  :param adoption_data: JSON data about adoption in format { tick: [ { adopter1: sender1, adopter2: sender2, ... } ] }
+  '''
+  print(nx.degree(graph))
+  print(adoption_data)
+  agent_id_from_name = lambda agent_name: agent_name.replace('(citizen ','').replace(')','') if 'citizen' in agent_name else agent_name.replace('(media ','').replace(')','')
+  degree_from_agent_name = lambda agent_name: nx.degree(graph)[int(agent_id_from_name(agent_name))]
+  adoption_data = {
+    # tick: { dict of adopters & senders }
+    int(tick): {
+      # adopter_name,adopter_degree: sender_name,sender_degree
+      f'{adopter},{degree_from_agent_name(adopter)}': f'{sender},{degree_from_agent_name(sender)}' for adopter, sender in adopters.items()
+    } for tick,adopters in adoption_data.items()
+  }
   peak_tick = list(spread_data).index(max(spread_data))
   around_peak_threshold = 3
   adopters_around_peak = { tick: adopters for tick,adopters in adoption_data.items() if (tick >= peak_tick - around_peak_threshold and tick <= peak_tick + around_peak_threshold) }
