@@ -1917,7 +1917,7 @@ SWITCH
 488
 load-graph?
 load-graph?
-1
+0
 1
 -1000
 
@@ -1927,7 +1927,7 @@ INPUTBOX
 242
 555
 load-graph-path
-D:/school/grad-school/Tufts/research/flint-media-model/simulation-data/18-Apr-2023-static-no-organizing-media-connect-sweep/graphs/0.5-3-0.75-0.75-4.csv
+C:/Users/nrabb_000/Documents/school/grad-school/Tufts/research/projects/flint-media-model/simulation-datastatic-influence-monte-carlo-1/graphs/0.75-10-0.01-0.75-0.csv
 1
 0
 String
@@ -1938,7 +1938,7 @@ INPUTBOX
 244
 622
 save-graph-path
-D:/school/grad-school/Tufts/research/flint-media-model/simulation-data/18-Apr-2023-static-no-organizing-media-connect-sweep/graphs/0.5-3-0.75-0.25-4.csv
+C:/Users/nrabb_000/Documents/school/grad-school/Tufts/research/projects/flint-media-model/simulation-datastatic-influence-monte-carlo-1/graphs/0.75-10-0.01-0.75-0.csv
 1
 0
 String
@@ -1979,7 +1979,7 @@ simple-spread-chance
 simple-spread-chance
 0
 1
-0.51
+0.75
 0.01
 1
 NIL
@@ -2031,7 +2031,7 @@ INPUTBOX
 341
 277
 sim-output-dir
-D:/school/grad-school/Tufts/research/flint-media-model/simulation-data/
+C:/Users/nrabb_000/Documents/school/grad-school/Tufts/research/projects/flint-media-model/simulation-data/
 1
 0
 String
@@ -2258,7 +2258,7 @@ ba-m
 ba-m
 0
 50
-3.0
+10.0
 1
 1
 NIL
@@ -2324,7 +2324,7 @@ citizen-media-influence
 citizen-media-influence
 0
 1
-0.75
+0.01
 0.01
 1
 NIL
@@ -2571,7 +2571,7 @@ repetition
 repetition
 0
 50
-4.0
+0.0
 1
 1
 NIL
@@ -3486,9 +3486,9 @@ export-plot "num-new-beliefs" (word contagion-dir "/" behavior-rand "_new-belief
     </enumeratedValueSet>
     <steppedValueSet variable="repetition" first="0" step="1" last="2"/>
   </experiment>
-  <experiment name="static-influence-monte-carlo-1" repetitions="10" runMetricsEveryStep="false">
+  <experiment name="static-influence-monte-carlo-1_no-organizing" repetitions="1000" runMetricsEveryStep="false">
     <setup>setup-py
-let run-dir (word sim-output-dir "static-influence-monte-carlo-1")
+let run-dir (word sim-output-dir "/static-influence-monte-carlo-1")
 let graphs-path (word run-dir "/graphs")
 carefully [
   if not (py:runresult (word "os.path.isdir('" graphs-path "')")) [
@@ -3520,6 +3520,18 @@ export-plot "num-new-beliefs" (word contagion-dir "/" behavior-rand "_new-belief
 output-adoption-data contagion-dir behavior-rand</final>
     <timeLimit steps="114"/>
     <metric>count citizens</metric>
+    <enumeratedValueSet variable="ba-m">
+      <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="simple-spread-chance">
+      <value value="0.75"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="citizen-citizen-influence">
+      <value value="0.75"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="citizen-media-influence">
+      <value value="0.01"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="contagion-on?">
       <value value="true"/>
     </enumeratedValueSet>
@@ -3544,6 +3556,9 @@ output-adoption-data contagion-dir behavior-rand</final>
     <enumeratedValueSet variable="belief-resolution">
       <value value="7"/>
     </enumeratedValueSet>
+    <enumeratedValueSet variable="epsilon">
+      <value value="0"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="brain-type">
       <value value="&quot;discrete&quot;"/>
     </enumeratedValueSet>
@@ -3556,23 +3571,8 @@ output-adoption-data contagion-dir behavior-rand</final>
     <enumeratedValueSet variable="spread-type">
       <value value="&quot;simple&quot;"/>
     </enumeratedValueSet>
-    <enumeratedValueSet variable="simple-spread-chance">
-      <value value="0.75"/>
-    </enumeratedValueSet>
     <enumeratedValueSet variable="graph-type">
       <value value="&quot;barabasi-albert&quot;"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="ba-m">
-      <value value="10"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="epsilon">
-      <value value="0"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="citizen-media-influence">
-      <value value="0.01"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="citizen-citizen-influence">
-      <value value="0.75"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="flint-community-size">
       <value value="0.005"/>
