@@ -1927,7 +1927,7 @@ INPUTBOX
 242
 555
 load-graph-path
-C:/Users/nrabb_000/Documents/school/grad-school/Tufts/research/projects/flint-media-model/simulation-datastatic-influence-monte-carlo-1/graphs/0.75-10-0.01-0.75-0.csv
+C:/Users/nrabb_000/Documents/school/grad-school/Tufts/research/projects/flint-media-model/simulation-data/static-influence-monte-carlo-1/graphs/0.75-10-0.01-0.75-0.csv
 1
 0
 String
@@ -1938,7 +1938,7 @@ INPUTBOX
 244
 622
 save-graph-path
-C:/Users/nrabb_000/Documents/school/grad-school/Tufts/research/projects/flint-media-model/simulation-datastatic-influence-monte-carlo-1/graphs/0.75-10-0.01-0.75-0.csv
+C:/Users/nrabb_000/Documents/school/grad-school/Tufts/research/projects/flint-media-model/simulation-data/static-influence-monte-carlo-1/graphs/0.75-10-0.01-0.75-0.csv
 1
 0
 String
@@ -3486,7 +3486,7 @@ export-plot "num-new-beliefs" (word contagion-dir "/" behavior-rand "_new-belief
     </enumeratedValueSet>
     <steppedValueSet variable="repetition" first="0" step="1" last="2"/>
   </experiment>
-  <experiment name="static-influence-monte-carlo-1_no-organizing" repetitions="1000" runMetricsEveryStep="false">
+  <experiment name="static-influence-monte-carlo-1_no-organizing" repetitions="1" runMetricsEveryStep="false">
     <setup>setup-py
 let run-dir (word sim-output-dir "/static-influence-monte-carlo-1")
 let graphs-path (word run-dir "/graphs")
@@ -3495,17 +3495,8 @@ carefully [
     py:run (word "create_nested_dirs('" graphs-path "')")
   ]
 ] [ ]
-let graph-file (word graphs-path "/" simple-spread-chance "-" ba-m "-" citizen-media-influence "-" citizen-citizen-influence "-" repetition ".csv")
-ifelse (py:runresult (word "os.path.isfile('" graph-file "')")) [
-  set load-graph? true
-  set load-graph-path graph-file
-  setup
-] [
-  set load-graph? false
-  set save-graph-path graph-file
-  setup
-  save-graph
-]
+setup
+
 set contagion-dir (word run-dir "/" simple-spread-chance "/" ba-m "/" citizen-media-influence "/" citizen-citizen-influence "/" repetition)
 carefully [
   if not (py:runresult (word "os.path.isdir('" contagion-dir "')")) [
@@ -3513,8 +3504,7 @@ carefully [
   ]
 ] [ ]</setup>
     <go>go</go>
-    <final>set behavior-rand random 10000
-export-world (word contagion-dir "/" behavior-rand "_world.csv")
+    <final>export-world (word contagion-dir "/" behavior-rand "_world.csv")
 export-plot "percent-agent-beliefs" (word contagion-dir "/" behavior-rand "_percent-agent-beliefs.csv")
 export-plot "num-new-beliefs" (word contagion-dir "/" behavior-rand "_new-beliefs.csv")
 output-adoption-data contagion-dir behavior-rand</final>
@@ -3548,7 +3538,7 @@ output-adoption-data contagion-dir behavior-rand</final>
       <value value="false"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="load-graph?">
-      <value value="false"/>
+      <value value="true"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="media-agents?">
       <value value="true"/>
@@ -3580,27 +3570,19 @@ output-adoption-data contagion-dir behavior-rand</final>
     <enumeratedValueSet variable="repetition">
       <value value="0"/>
     </enumeratedValueSet>
+    <steppedValueSet variable="behavior-rand" first="1" step="1" last="1000"/>
   </experiment>
-  <experiment name="static-influence-monte-carlo-2_no-organizing" repetitions="1000" runMetricsEveryStep="false">
+  <experiment name="static-influence-monte-carlo-2_no-organizing" repetitions="1" runMetricsEveryStep="false">
     <setup>setup-py
-let run-dir (word sim-output-dir "/static-influence-monte-carlo-1")
+let run-dir (word sim-output-dir "/static-influence-monte-carlo-2")
 let graphs-path (word run-dir "/graphs")
 carefully [
   if not (py:runresult (word "os.path.isdir('" graphs-path "')")) [
     py:run (word "create_nested_dirs('" graphs-path "')")
   ]
 ] [ ]
-let graph-file (word graphs-path "/" simple-spread-chance "-" ba-m "-" citizen-media-influence "-" citizen-citizen-influence "-" repetition ".csv")
-ifelse (py:runresult (word "os.path.isfile('" graph-file "')")) [
-  set load-graph? true
-  set load-graph-path graph-file
-  setup
-] [
-  set load-graph? false
-  set save-graph-path graph-file
-  setup
-  save-graph
-]
+setup
+
 set contagion-dir (word run-dir "/" simple-spread-chance "/" ba-m "/" citizen-media-influence "/" citizen-citizen-influence "/" repetition)
 carefully [
   if not (py:runresult (word "os.path.isdir('" contagion-dir "')")) [
@@ -3608,8 +3590,7 @@ carefully [
   ]
 ] [ ]</setup>
     <go>go</go>
-    <final>set behavior-rand random 10000
-export-world (word contagion-dir "/" behavior-rand "_world.csv")
+    <final>export-world (word contagion-dir "/" behavior-rand "_world.csv")
 export-plot "percent-agent-beliefs" (word contagion-dir "/" behavior-rand "_percent-agent-beliefs.csv")
 export-plot "num-new-beliefs" (word contagion-dir "/" behavior-rand "_new-beliefs.csv")
 output-adoption-data contagion-dir behavior-rand</final>
@@ -3675,27 +3656,19 @@ output-adoption-data contagion-dir behavior-rand</final>
     <enumeratedValueSet variable="repetition">
       <value value="0"/>
     </enumeratedValueSet>
+    <steppedValueSet variable="behavior-rand" first="1" step="1" last="1000"/>
   </experiment>
-  <experiment name="static-influence-monte-carlo-3_no-organizing" repetitions="1000" runMetricsEveryStep="false">
+  <experiment name="static-influence-monte-carlo-3_no-organizing" repetitions="1" runMetricsEveryStep="false">
     <setup>setup-py
-let run-dir (word sim-output-dir "/static-influence-monte-carlo-1")
+let run-dir (word sim-output-dir "/static-influence-monte-carlo-3")
 let graphs-path (word run-dir "/graphs")
 carefully [
   if not (py:runresult (word "os.path.isdir('" graphs-path "')")) [
     py:run (word "create_nested_dirs('" graphs-path "')")
   ]
 ] [ ]
-let graph-file (word graphs-path "/" simple-spread-chance "-" ba-m "-" citizen-media-influence "-" citizen-citizen-influence "-" repetition ".csv")
-ifelse (py:runresult (word "os.path.isfile('" graph-file "')")) [
-  set load-graph? true
-  set load-graph-path graph-file
-  setup
-] [
-  set load-graph? false
-  set save-graph-path graph-file
-  setup
-  save-graph
-]
+setup
+
 set contagion-dir (word run-dir "/" simple-spread-chance "/" ba-m "/" citizen-media-influence "/" citizen-citizen-influence "/" repetition)
 carefully [
   if not (py:runresult (word "os.path.isdir('" contagion-dir "')")) [
@@ -3703,8 +3676,7 @@ carefully [
   ]
 ] [ ]</setup>
     <go>go</go>
-    <final>set behavior-rand random 10000
-export-world (word contagion-dir "/" behavior-rand "_world.csv")
+    <final>export-world (word contagion-dir "/" behavior-rand "_world.csv")
 export-plot "percent-agent-beliefs" (word contagion-dir "/" behavior-rand "_percent-agent-beliefs.csv")
 export-plot "num-new-beliefs" (word contagion-dir "/" behavior-rand "_new-beliefs.csv")
 output-adoption-data contagion-dir behavior-rand</final>
@@ -3770,27 +3742,19 @@ output-adoption-data contagion-dir behavior-rand</final>
     <enumeratedValueSet variable="repetition">
       <value value="0"/>
     </enumeratedValueSet>
+    <steppedValueSet variable="behavior-rand" first="1" step="1" last="1000"/>
   </experiment>
-  <experiment name="static-influence-monte-carlo-4_no-organizing" repetitions="1000" runMetricsEveryStep="false">
+  <experiment name="static-influence-monte-carlo-4_no-organizing" repetitions="1" runMetricsEveryStep="false">
     <setup>setup-py
-let run-dir (word sim-output-dir "/static-influence-monte-carlo-1")
+let run-dir (word sim-output-dir "/static-influence-monte-carlo-5")
 let graphs-path (word run-dir "/graphs")
 carefully [
   if not (py:runresult (word "os.path.isdir('" graphs-path "')")) [
     py:run (word "create_nested_dirs('" graphs-path "')")
   ]
 ] [ ]
-let graph-file (word graphs-path "/" simple-spread-chance "-" ba-m "-" citizen-media-influence "-" citizen-citizen-influence "-" repetition ".csv")
-ifelse (py:runresult (word "os.path.isfile('" graph-file "')")) [
-  set load-graph? true
-  set load-graph-path graph-file
-  setup
-] [
-  set load-graph? false
-  set save-graph-path graph-file
-  setup
-  save-graph
-]
+setup
+
 set contagion-dir (word run-dir "/" simple-spread-chance "/" ba-m "/" citizen-media-influence "/" citizen-citizen-influence "/" repetition)
 carefully [
   if not (py:runresult (word "os.path.isdir('" contagion-dir "')")) [
@@ -3798,8 +3762,7 @@ carefully [
   ]
 ] [ ]</setup>
     <go>go</go>
-    <final>set behavior-rand random 10000
-export-world (word contagion-dir "/" behavior-rand "_world.csv")
+    <final>export-world (word contagion-dir "/" behavior-rand "_world.csv")
 export-plot "percent-agent-beliefs" (word contagion-dir "/" behavior-rand "_percent-agent-beliefs.csv")
 export-plot "num-new-beliefs" (word contagion-dir "/" behavior-rand "_new-beliefs.csv")
 output-adoption-data contagion-dir behavior-rand</final>
@@ -3865,27 +3828,19 @@ output-adoption-data contagion-dir behavior-rand</final>
     <enumeratedValueSet variable="repetition">
       <value value="0"/>
     </enumeratedValueSet>
+    <steppedValueSet variable="behavior-rand" first="1" step="1" last="1000"/>
   </experiment>
-  <experiment name="static-influence-monte-carlo-5_no-organizing" repetitions="1000" runMetricsEveryStep="false">
+  <experiment name="static-influence-monte-carlo-5_no-organizing" repetitions="1" runMetricsEveryStep="false">
     <setup>setup-py
-let run-dir (word sim-output-dir "/static-influence-monte-carlo-1")
+let run-dir (word sim-output-dir "/static-influence-monte-carlo-5")
 let graphs-path (word run-dir "/graphs")
 carefully [
   if not (py:runresult (word "os.path.isdir('" graphs-path "')")) [
     py:run (word "create_nested_dirs('" graphs-path "')")
   ]
 ] [ ]
-let graph-file (word graphs-path "/" simple-spread-chance "-" ba-m "-" citizen-media-influence "-" citizen-citizen-influence "-" repetition ".csv")
-ifelse (py:runresult (word "os.path.isfile('" graph-file "')")) [
-  set load-graph? true
-  set load-graph-path graph-file
-  setup
-] [
-  set load-graph? false
-  set save-graph-path graph-file
-  setup
-  save-graph
-]
+setup
+
 set contagion-dir (word run-dir "/" simple-spread-chance "/" ba-m "/" citizen-media-influence "/" citizen-citizen-influence "/" repetition)
 carefully [
   if not (py:runresult (word "os.path.isdir('" contagion-dir "')")) [
@@ -3893,8 +3848,7 @@ carefully [
   ]
 ] [ ]</setup>
     <go>go</go>
-    <final>set behavior-rand random 10000
-export-world (word contagion-dir "/" behavior-rand "_world.csv")
+    <final>export-world (word contagion-dir "/" behavior-rand "_world.csv")
 export-plot "percent-agent-beliefs" (word contagion-dir "/" behavior-rand "_percent-agent-beliefs.csv")
 export-plot "num-new-beliefs" (word contagion-dir "/" behavior-rand "_new-beliefs.csv")
 output-adoption-data contagion-dir behavior-rand</final>
@@ -3960,6 +3914,7 @@ output-adoption-data contagion-dir behavior-rand</final>
     <enumeratedValueSet variable="repetition">
       <value value="0"/>
     </enumeratedValueSet>
+    <steppedValueSet variable="behavior-rand" first="1" step="1" last="1000"/>
   </experiment>
 </experiments>
 @#$#@#$#@
