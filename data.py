@@ -999,8 +999,6 @@ def analyze_spread_peak(spread_data, adoption_data, graph):
   '''
   :param adoption_data: JSON data about adoption in format { tick: [ { adopter1: sender1, adopter2: sender2, ... } ] }
   '''
-  print(nx.degree(graph))
-  print(adoption_data)
   agent_id_from_name = lambda agent_name: agent_name.replace('(citizen ','').replace(')','') if 'citizen' in agent_name else agent_name.replace('(media ','').replace(')','')
   degree_from_agent_name = lambda agent_name: nx.degree(graph)[int(agent_id_from_name(agent_name))]
   adoption_data = {
@@ -1011,8 +1009,17 @@ def analyze_spread_peak(spread_data, adoption_data, graph):
     } for tick,adopters in adoption_data.items()
   }
   peak_tick = list(spread_data).index(max(spread_data))
+
   around_peak_threshold = 3
   adopters_around_peak = { tick: adopters for tick,adopters in adoption_data.items() if (tick >= peak_tick - around_peak_threshold and tick <= peak_tick + around_peak_threshold) }
+  
+  high_spread_threshold = 10
+  high_spread_agents = {
+    tick: [
+      sender for adopter, sender in adopters.items() if (np.array(list(adopters.values()).sum() == sender)) >= high_spread_threshold
+     ] for tick, adopters in adopters_around_peak.items()
+  }
+
   return adopters_around_peak
 
 """
