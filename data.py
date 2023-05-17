@@ -975,6 +975,37 @@ def plot_chi_sq_data(chi2_data, props, title, out_path, out_filename):
   plt.savefig(f'{out_path}/{out_filename}')
   plt.close()
 
+def analyze_high_spread_frequency(peak_spread_data):
+  '''
+  Do an analysis to find out how often certain high-spreading agents
+  spread belief to others across all the simulation runs.
+
+  :param peak_spread_data: The result of calling `analyze_spread_peak_df`
+  '''
+  high_spread_frequency = { }
+  for run_id,data in peak_spread_data.items():
+    high_spreaders = data[1]
+    for tick,spreader_set in high_spreaders.items():
+      if not spreader_set: continue
+      for spreader in spreader_set:
+        spreader_data = spreader.split(',')
+        agent_name = spreader_data[0]
+        degree = spreader_data[1]
+        sent_to = spreader_data[2]
+        if agent_name not in high_spread_frequency:
+          high_spread_frequency[agent_name] = { 'degree': degree, 'runs': { run_id: sent_to } }
+        else:
+          high_spread_frequency[agent_name]['runs'][run_id] = sent_to
+  frequency_percents = {
+    agent_name: { 
+        'degree': data['degree'],
+        'percent_runs': len(data['runs']) / len(peak_spread_data)
+      } for agent_name, data in high_spread_frequency.items()
+  } 
+  freq_percents_sorted = {agent_name: data for agent_name, data in sorted(frequency_percents.items(), key=lambda item: item[1]['percent_runs'])}
+  return freq_percents_sorted
+
+
 def analyze_spread_peak_df(df, columns, sim_output_dir):
   analyzed_data = {}
   for row in df.iterrows():
@@ -994,6 +1025,7 @@ def analyze_spread_peak_df(df, columns, sim_output_dir):
     
     print(f'analyzing run {data["run_id"]}')
     analyzed_data[data['run_id']] = analyze_spread_peak(data['data'], adoption_data, graph)
+
   return analyzed_data
 
 def analyze_spread_peak(spread_data, adoption_data, graph):
@@ -1017,7 +1049,7 @@ def analyze_spread_peak(spread_data, adoption_data, graph):
     # tick: { dict of adopters & senders }
     int(tick): {
       # adopter_name,adopter_degree: sender_name,sender_degree
-      f'{adopter},{degree_from_agent_name(adopter)}': f'{sender},{degree_from_agent_name(sender)}' for adopter, sender in adopters.items()
+      f'{adopter},deg {degree_from_agent_name(adopter)}': f'{sender},deg {degree_from_agent_name(sender)}' for adopter, sender in adopters.items()
     } for tick,adopters in adoption_data.items()
   }
   
@@ -1028,12 +1060,12 @@ def analyze_spread_peak(spread_data, adoption_data, graph):
   
   high_spread_threshold = 10
   high_spread_agents = {
-    tick: [
-      sender for adopter, sender in adopters.items() if (np.array(list(adopters.values()).sum() == sender)) >= high_spread_threshold
-     ] for tick, adopters in adopters_around_peak.items()
+    tick: set([
+      f'{sender},sent to {(np.array(list(adopters.values())) == sender).sum()}' for adopter, sender in adopters.items() if (np.array(list(adopters.values())) == sender).sum() >= high_spread_threshold
+     ]) for tick, adopters in adopters_around_peak.items()
   }
 
-  return adopters_around_peak
+  return (adopters_around_peak, high_spread_agents)
 
 """
 ##################
