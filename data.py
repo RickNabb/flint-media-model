@@ -1003,15 +1003,15 @@ def analyze_spread_peak(spread_data, adoption_data, graph):
   agent_id_from_name = lambda agent_name: agent_name.replace('(citizen ','').replace(')','') if 'citizen' in agent_name else agent_name.replace('(media ','').replace(')','')
   degree_from_agent_name = lambda agent_name: nx.degree(graph)[int(agent_id_from_name(agent_name))] if int(agent_id_from_name(agent_name)) in dict(nx.degree(graph)) else -1
 
-  # Sanity check
-  for tick, adopters in adoption_data.items():
-    for adopter, sender in adopters.items():
-      adopter_id = int(agent_id_from_name(adopter))
-      sender_id = int(agent_id_from_name(sender))
-      if adopter_id not in dict(nx.degree(graph)):
-        print(f'{adopter} in adopters but not in graph')
-      elif sender_id not in dict(nx.degree(graph)):
-        print(f'{sender} in senders but not in graph')
+  # # Sanity check
+  # for tick, adopters in adoption_data.items():
+  #   for adopter, sender in adopters.items():
+  #     adopter_id = int(agent_id_from_name(adopter))
+  #     sender_id = int(agent_id_from_name(sender))
+  #     if adopter_id not in dict(nx.degree(graph)):
+  #       print(f'{adopter} in adopters but not in graph')
+  #     elif sender_id not in dict(nx.degree(graph)):
+  #       print(f'{sender} in senders but not in graph')
 
   adoption_data = {
     # tick: { dict of adopters & senders }
