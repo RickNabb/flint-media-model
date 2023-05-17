@@ -992,6 +992,7 @@ def analyze_spread_peak_df(df, columns, sim_output_dir):
     with open(f'{sim_output_dir}/{col_dir_string}/{data["run_id"]}_messages_adopted.json','r') as f:
       adoption_data = json.load(f)
     
+    print(f'analyzing run {data["run_id"]}')
     analyzed_data[data['run_id']] = analyze_spread_peak(data['data'], adoption_data, graph)
   return analyzed_data
 
@@ -1000,7 +1001,18 @@ def analyze_spread_peak(spread_data, adoption_data, graph):
   :param adoption_data: JSON data about adoption in format { tick: [ { adopter1: sender1, adopter2: sender2, ... } ] }
   '''
   agent_id_from_name = lambda agent_name: agent_name.replace('(citizen ','').replace(')','') if 'citizen' in agent_name else agent_name.replace('(media ','').replace(')','')
-  degree_from_agent_name = lambda agent_name: nx.degree(graph)[int(agent_id_from_name(agent_name))]
+  degree_from_agent_name = lambda agent_name: nx.degree(graph)[int(agent_id_from_name(agent_name))] if int(agent_id_from_name(agent_name)) in dict(nx.degree(graph)) else -1
+
+  # Sanity check
+  for tick, adopters in adoption_data.items():
+    for adopter, sender in adopters.items():
+      adopter_id = int(agent_id_from_name(adopter))
+      sender_id = int(agent_id_from_name(sender))
+      if adopter_id not in dict(nx.degree(graph)):
+        print(f'{adopter} in adopters but not in graph')
+      elif sender_id not in dict(nx.degree(graph)):
+        print(f'{sender} in senders but not in graph')
+
   adoption_data = {
     # tick: { dict of adopters & senders }
     int(tick): {
@@ -1008,6 +1020,7 @@ def analyze_spread_peak(spread_data, adoption_data, graph):
       f'{adopter},{degree_from_agent_name(adopter)}': f'{sender},{degree_from_agent_name(sender)}' for adopter, sender in adopters.items()
     } for tick,adopters in adoption_data.items()
   }
+  
   peak_tick = list(spread_data).index(max(spread_data))
 
   around_peak_threshold = 3
