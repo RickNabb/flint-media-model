@@ -1052,8 +1052,8 @@ def base_model_sweep_results_to_df(path):
   repetition = ['0','1','2','3','4']
 
   measures = ['new-beliefs']
-  df_columns = { "new-beliefs": ['n','spread-type','simple-spread-chance','graph-type','ba-m','repetition'] }
-  multidata_key_params = ['simple-spread-chance','ba-m','repetition']
+  df_columns = { "new-beliefs": ['n','spread-type','simple-spread-chance','graph-type','ba-m','citizen-citizen-influence', 'citizen-media-influence','repetition'] }
+  multidata_key_params = ['simple-spread-chance','ba-m','citizen-citizen-influence', 'citizen-media-influence', 'repetition']
 
   (multidata, props, params) = get_all_multidata(
     [simple_spread_chance,ba_m,cit_media_influence,cit_cit_influence,repetition],
@@ -1176,4 +1176,3 @@ def add_graph_data_to_dataframe(df, columns, path):
   for key, val in new_cols.items():
     new_df[key] = val
   return new_df
-    
