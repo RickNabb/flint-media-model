@@ -225,6 +225,13 @@ def nlogo_graph_to_nx(citizens, friend_links):
     G.add_edge(int(end1), int(end2))
   return G
 
+def read_graph_to_nx_with_media(citizens, cit_social, media, subscribers):
+  citizens_brains = [ { 'ID': cit[0], 'A': cit[1], 'is_flint': cit[2], 'malleable': ['A'], 'prior': [] } for cit in citizens ]
+  media_brains = [ { 'ID': m[0], 'A': m[1], 'malleable': ['A'], 'prior': [] } for m in media ]
+  friend_links = [ f'social-friend {link[0]} {link[1]}' for link in cit_social ]
+  subscriber_links = [ f'subscriber {link[0]} {link[1]}' for link in subscribers ]
+  return nlogo_graph_to_nx_with_media(citizens_brains, friend_links, media_brains, subscriber_links)
+
 def nlogo_graph_to_nx_with_media(citizens, friend_links, media, subscribers):
   G = nx.Graph()
   # agents = citizens + media
