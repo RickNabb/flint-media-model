@@ -35,7 +35,8 @@ globals [
 
   ;; For experiments
   contagion-dir
-  behavior-rand
+
+  links-formed-by-tick
 
   ;; Agents who believed at t-1
   num-agents-adopted
@@ -84,6 +85,7 @@ to setup
   set citizen-malleables [ "Attributes.A" ]
 
   set agents-adopted-by-tick []
+  set links-formed-by-tick []
 
   ask patches [
     set pcolor white
@@ -501,6 +503,20 @@ to-report set-merge-lists [ lists ]
   report merged
 end
 
+to add-link-formed-at-tick [ organizer organized ]
+  let links-formed-at-tick (dict-value links-formed-by-tick ticks)
+  let organizer-organized-pair (list organizer organized)
+  ifelse links-formed-at-tick = -1 [
+    let links-at-tick (list ticks (list organizer-organized-pair))
+    set links-formed-by-tick (lput links-at-tick links-formed-by-tick)
+;              show (word "set links-formed-by-tick new entry" links-formed-by-tick)
+  ] [
+    let new-links-formed-at-tick (list ticks (lput organizer-organized-pair links-formed-at-tick))
+    set links-formed-by-tick (replace-dict-item links-formed-by-tick ticks new-links-formed-at-tick)
+;              show (word "added linked-formed-by-tick entry" links-formed-by-tick)
+  ]
+end
+
 to organize [ cit ]
   let max-media-subscriber-count max [ count subscribers ] of medias
   let max-social-neighbor-count max [ count social-friend-neighbors ] of citizens
@@ -524,6 +540,7 @@ to organize [ cit ]
           if roll <= connect-prob [
             create-social-friend-to cit
             ask cit [ create-social-friend-to neighbor-neighbor ]
+            add-link-formed-at-tick cit self
           ]
         ]
       ]
@@ -553,6 +570,7 @@ to organize [ cit ]
             show (word "Connected to " cit)
             create-subscriber-to cit
             create-subscriber-from cit
+            add-link-formed-at-tick cit self
           ]
         ]
       ]
@@ -579,6 +597,7 @@ to organize [ cit ]
             show (word "Connected to " cit)
             create-social-friend-to cit
             create-social-friend-from cit
+            add-link-formed-at-tick cit self
           ]
         ]
       ]
@@ -620,6 +639,7 @@ to organize [ cit ]
             show (word "Connected to " cit)
             create-social-friend-to cit
             create-social-friend-from cit
+            add-link-formed-at-tick cit self
           ]
         ]
       ]
@@ -1917,7 +1937,7 @@ SWITCH
 488
 load-graph?
 load-graph?
-0
+1
 1
 -1000
 
@@ -1927,7 +1947,7 @@ INPUTBOX
 242
 555
 load-graph-path
-C:/Users/nrabb_000/Documents/school/grad-school/Tufts/research/projects/flint-media-model/simulation-data/static-influence-monte-carlo-1/graphs/0.75-10-0.01-0.75-0.csv
+C:/Users/Nick/Documents/school/grad-school/Tufts/research/projects/flint-media-model/simulation-graphs/0.75-10-0.01-0.75-0.csv
 1
 0
 String
@@ -1979,7 +1999,7 @@ simple-spread-chance
 simple-spread-chance
 0
 1
-0.75
+0.5
 0.01
 1
 NIL
@@ -2031,7 +2051,7 @@ INPUTBOX
 341
 277
 sim-output-dir
-C:/Users/nrabb_000/Documents/school/grad-school/Tufts/research/projects/flint-media-model/simulation-data/
+D:/school/grad-school/Tufts/research/flint-media-model/simulation-data/
 1
 0
 String
@@ -2309,7 +2329,7 @@ citizen-citizen-influence
 citizen-citizen-influence
 0
 1
-0.75
+0.05
 0.01
 1
 NIL
@@ -2450,7 +2470,7 @@ SWITCH
 538
 flint-organizing?
 flint-organizing?
-1
+0
 1
 -1000
 
@@ -2462,7 +2482,7 @@ CHOOSER
 flint-organizing-strategy
 flint-organizing-strategy
 "high-degree-media" "high-degree-citizens" "neighbors-of-neighbors" "high-degree-cit-and-media"
-3
+0
 
 SLIDER
 29
@@ -2572,6 +2592,21 @@ repetition
 0
 50
 0.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+390
+179
+562
+212
+behavior-rand
+behavior-rand
+0
+10000
+986.0
 1
 1
 NIL
