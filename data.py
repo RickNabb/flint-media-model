@@ -12,7 +12,7 @@ import pandas as pd
 import os
 import numpy as np
 import networkx as nx
-from scipy.stats import chi2_contingency, truncnorm
+from scipy.stats import chi2_contingency, truncnorm, percentileofscore
 from sklearn.linear_model import LinearRegression
 import math
 import matplotlib.pyplot as plt
@@ -975,7 +975,7 @@ def plot_chi_sq_data(chi2_data, props, title, out_path, out_filename):
   plt.savefig(f'{out_path}/{out_filename}')
   plt.close()
 
-def analyze_high_spread_frequency(peak_spread_data):
+def analyze_high_spread_frequency(peak_spread_data, graph):
   '''
   Do an analysis to find out how often certain high-spreading agents
   spread belief to others across all the simulation runs.
@@ -999,14 +999,40 @@ def analyze_high_spread_frequency(peak_spread_data):
   frequency_percents = {
     agent_name: { 
         'degree': data['degree'],
+        'degree_percentile': percentileofscore(list(nx.degree(graph)), data['degree']),
         'percent_runs': len(data['runs']) / len(peak_spread_data)
       } for agent_name, data in high_spread_frequency.items()
   } 
   freq_percents_sorted = {agent_name: data for agent_name, data in sorted(frequency_percents.items(), key=lambda item: item[1]['percent_runs'])}
   return freq_percents_sorted
 
+def analyze_dynamic_spread_peak_df(df, columns, sim_output_dir):
+  analyzed_data = {}
+  for row in df.iterrows():
+    data = row[1]
+    col_values = [ data[col] for col in columns ]
+    col_string = '-'.join(col_values)
 
-def analyze_spread_peak_df(df, columns, sim_output_dir):
+    # Read in the graph
+    (cit, cit_social, media_arr, media_sub_arr)= read_graph(f'{sim_output_dir}/graphs/{col_string}.csv')
+    graph = read_graph_to_nx_with_media(cit, cit_social, media_arr, media_sub_arr)
+    # Read in the adoption data
+    col_dir_string = '/'.join(col_values)
+
+    adoption_data = None
+    with open(f'{sim_output_dir}/{col_dir_string}/{data["run_id"]}_messages_adopted.json','r') as f:
+      adoption_data = json.load(f)
+
+    link_formation_data = None
+    with open(f'{sim_output_dir}/{col_dir_string}/{data["run_id"]}_links_formed.json','r') as f:
+      adoption_data = json.load(f)
+    
+    print(f'analyzing run {data["run_id"]}')
+    analyzed_data[data['run_id']] = analyze_dynamic_spread_peak(data['data'], adoption_data, link_formation_data, graph)
+
+  return analyzed_data
+
+def analyze_static_spread_peak_df(df, columns, sim_output_dir):
   analyzed_data = {}
   for row in df.iterrows():
     data = row[1]
@@ -1024,11 +1050,60 @@ def analyze_spread_peak_df(df, columns, sim_output_dir):
       adoption_data = json.load(f)
     
     print(f'analyzing run {data["run_id"]}')
-    analyzed_data[data['run_id']] = analyze_spread_peak(data['data'], adoption_data, graph)
+    analyzed_data[data['run_id']] = analyze_static_spread_peak(data['data'], adoption_data, graph)
 
   return analyzed_data
 
-def analyze_spread_peak(spread_data, adoption_data, graph):
+def agent_id_from_name(agent_name):
+  return agent_name.replace('(citizen ','').replace(')','') if 'citizen' in agent_name else agent_name.replace('(media ','').replace(')','')
+
+def organizing_graph_at_tick(graph, link_formation_data, tick):
+  for t,links_formed in sorted(link_formation_data).items():
+    if t <= tick:
+      for organizer,organized in links_formed.items():
+        graph.add_edge(agent_id_from_name(organizer), agent_id_from_name(organized))
+        graph.add_edge(agent_id_from_name(organized), agent_id_from_name(organizer))
+  return graph
+
+def analyze_dynamic_spread_peak(spread_data, adoption_data, link_formation_data, graph):
+  '''
+  :param adoption_data: JSON data about adoption in format { tick: [ { adopter1: sender1, adopter2: sender2, ... } ] }
+  '''
+  degree_from_agent_name = lambda agent_name, tick: nx.degree(organizing_graph_at_tick(graph,link_formation_data,tick))[int(agent_id_from_name(agent_name))] if int(agent_id_from_name(agent_name)) in dict(nx.degree(graph)) else -1
+
+  # # Sanity check
+  # for tick, adopters in adoption_data.items():
+  #   for adopter, sender in adopters.items():
+  #     adopter_id = int(agent_id_from_name(adopter))
+  #     sender_id = int(agent_id_from_name(sender))
+  #     if adopter_id not in dict(nx.degree(graph)):
+  #       print(f'{adopter} in adopters but not in graph')
+  #     elif sender_id not in dict(nx.degree(graph)):
+  #       print(f'{sender} in senders but not in graph')
+
+  adoption_data = {
+    # tick: { dict of adopters & senders }
+    int(tick): {
+      # adopter_name,adopter_degree: sender_name,sender_degree
+      f'{adopter},deg {degree_from_agent_name(adopter,tick)}': f'{sender},deg {degree_from_agent_name(sender,tick)}' for adopter, sender in adopters.items()
+    } for tick,adopters in adoption_data.items()
+  }
+  
+  peak_tick = list(spread_data).index(max(spread_data))
+
+  around_peak_threshold = 3
+  adopters_around_peak = { tick: adopters for tick,adopters in adoption_data.items() if (tick >= peak_tick - around_peak_threshold and tick <= peak_tick + around_peak_threshold) }
+  
+  high_spread_threshold = 10
+  high_spread_agents = {
+    tick: set([
+      f'{sender},sent to {(np.array(list(adopters.values())) == sender).sum()}' for adopter, sender in adopters.items() if (np.array(list(adopters.values())) == sender).sum() >= high_spread_threshold
+     ]) for tick, adopters in adopters_around_peak.items()
+  }
+
+  return (adopters_around_peak, high_spread_agents)
+
+def analyze_static_spread_peak(spread_data, adoption_data, graph):
   '''
   :param adoption_data: JSON data about adoption in format { tick: [ { adopter1: sender1, adopter2: sender2, ... } ] }
   '''
