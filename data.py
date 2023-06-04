@@ -313,6 +313,13 @@ def write_message_data(path, filename, messages_adopted):
   with open(f'{path}/{filename}_messages_adopted.json', 'w', encoding='utf-8') as f:
     json.dump(messages_adopted_py, f, ensure_ascii=False)
 
+def write_link_formation_data(path, filename, links_formed):
+  '''
+  '''
+  links_formed_py = { int(tick): organizer_organized_pair_dict for tick, organizer_organized_pair_dict in links_formed.items() }
+  with open(f'{path}/{filename}_links_formed.json', 'w', encoding='utf-8') as f:
+    json.dump(links_formed_py, f, ensure_ascii=False)
+
 """
 ANALYSIS FUNCTIONS
 """
