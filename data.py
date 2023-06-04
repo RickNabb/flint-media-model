@@ -1250,6 +1250,63 @@ def base_model_sweep_results_to_df(path):
     path)
   return multidata_to_dataframes(measures, df_columns, multidata, multidata_key_params, props, params, multidata_ids)
 
+def static_influence_monte_carlo_results_to_df(path, version, organizing_on):
+  version_to_params = {
+    1: {
+      'simple_spread_chance': [ '0.75' ],
+      'ba_m': [ '10' ],
+      'cit_cit_influence': [ '0.75' ],
+      'cit_media_influence': [ '0.01' ],
+      'repetition': [ '0' ],
+    },
+    2: {
+      'simple_spread_chance': [ '0.75' ],
+      'ba_m': [ '10' ],
+      'cit_cit_influence': [ '0.5' ],
+      'cit_media_influence': [ '0.01' ],
+      'repetition': [ '0' ],
+    },
+    3: {
+      'simple_spread_chance': [ '0.75' ],
+      'ba_m': [ '10' ],
+      'cit_cit_influence': [ '0.25' ],
+      'cit_media_influence': [ '0.01' ],
+      'repetition': [ '0' ],
+    },
+    4: {
+      'simple_spread_chance': [ '0.5' ],
+      'ba_m': [ '10' ],
+      'cit_cit_influence': [ '0.25' ],
+      'cit_media_influence': [ '0.1' ],
+      'repetition': [ '0' ],
+    },
+    5: {
+      'simple_spread_chance': [ '0.5' ],
+      'ba_m': [ '10' ],
+      'cit_cit_influence': [ '0.5' ],
+      'cit_media_influence': [ '0.01' ],
+      'repetition': [ '0' ],
+    }
+  }
+  measures = ['new-beliefs']
+  df_columns = { "new-beliefs": ['n','spread-type','simple-spread-chance','ba-m','cit-media-influence','cit-cit-influence','repetition'] } if not organizing_on else { "new-beliefs": ['n','spread-type','simple-spread-chance','ba-m','cit-media-influence','cit-cit-influence', 'flint-organizing-strategy', 'repetition'] }
+  multidata_key_params = ['simple-spread-chance','ba-m','cit-media-influence','cit-cit-influence','repetition'] if not organizing_on else ['simple-spread-chance','ba-m','cit-media-influence','cit-cit-influence', 'flint-organizing-strategy', 'repetition']
+
+  simple_spread_chance = version_to_params[version]['simple_spread_chance']
+  ba_m = version_to_params[version]['ba_m']
+  cit_cit_influence = version_to_params[version]['cit_cit_influence']
+  cit_media_influence = version_to_params[version]['cit_media_influence']
+  organizing_strategy = ['neighbors-of-neighbors','high-degree-media','high-degree-citizens','high-degree-cit-and-media']
+  repetition = version_to_params[version]['repetition']
+
+  param_values = [simple_spread_chance,ba_m,cit_media_influence,cit_cit_influence,repetition] if not organizing_on else [simple_spread_chance,ba_m,cit_media_influence,cit_cit_influence,organizing_strategy, repetition]
+  (multidata, props, params, multidata_ids) = get_all_multidata(
+    param_values,
+    {'percent-agent-beliefs': [PLOT_TYPES.LINE, PLOT_TYPES.STACK],
+    'new-beliefs': [PLOT_TYPES.LINE]},
+    path)
+  return multidata_to_dataframes(measures, df_columns, multidata, multidata_key_params, props, params, multidata_ids)
+
 def static_influence_monte_carlo_1_results_to_df(path):
   simple_spread_chance = [ '0.75' ]
   ba_m = ['10']
