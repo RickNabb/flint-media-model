@@ -982,6 +982,37 @@ def plot_chi_sq_data(chi2_data, props, title, out_path, out_filename):
   plt.savefig(f'{out_path}/{out_filename}')
   plt.close()
 
+def analyze_and_write_spread_analysis(out_path, simulation_data_path):
+  no_organizing_columns = ['simple-spread-chance','ba-m','cit-media-influence','cit-cit-influence','repetition']
+  (cit,cit_social,media_arr,media_sub_arr) = read_graph('./simulation-graphs/0.75-10-0.01-0.75-0.csv')
+  graph = read_graph_to_nx_with_media(cit, cit_social, media_arr, media_sub_arr)
+
+  # TODO: Only no organizing thus far
+  for i in range(1, 6):
+    print(f'Analyzing and writing results for monte carlo {i}')
+    df = None
+    if os.path.exists(f'{out_path}/monte-carlo-{i}_no-organizing.csv'):
+      df = pd.read_csv(f'{out_path}/monte-carlo-{i}_no-organizing.csv')
+      for j in range(len(df)):
+        raw_data = df.iloc[j]['data']
+        df.at[j,'data'] = np.fromstring(raw_data[1:-1].replace('\n','').replace('0. ','0 '),sep=' ')
+    else:
+      df = static_influence_monte_carlo_results_to_df(f'{simulation_data_path}/static-infleunce-monte-carlo-{i}',i,False)
+      df.to_csv(f'{out_path}/monte-carlo-{i}_no-organizing.csv')
+      df = df['new-beliefs']
+
+    df_spread_res = analyze_static_spread_peak_df(df, no_organizing_columns, f'{simulation_data_path}/static-influence-monte-carlo-{i}')
+    # Write out raw spread results by run
+    with open(f'{out_path}/monte-carlo-{i}_high-spread-by-run.json','w') as f:
+      json.dump({ run_id: run_data[0] for run_id, run_data in df_spread_res['by_run'].items() }, f, ensure_ascii=False)
+
+    high_spread = analyze_high_spread_frequency(df_spread_res['by_run'], graph)
+    # Write out the frequency and degree percentile analysis
+    with open(f'{out_path}/monte-carlo-{i}_high-spread-frequency.json','w') as f:
+      json.dump(high_spread, f, ensure_ascii=False)
+    
+
+
 def analyze_high_spread_frequency(peak_spread_data, graph):
   '''
   Do an analysis to find out how often certain high-spreading agents
@@ -1000,13 +1031,13 @@ def analyze_high_spread_frequency(peak_spread_data, graph):
         degree = spreader_data[1]
         sent_to = spreader_data[2]
         if agent_name not in high_spread_frequency:
-          high_spread_frequency[agent_name] = { 'degree': degree, 'runs': { run_id: sent_to } }
+          high_spread_frequency[agent_name] = { 'degree': int(degree.replace('deg ','')), 'runs': { run_id: sent_to } }
         else:
           high_spread_frequency[agent_name]['runs'][run_id] = sent_to
   frequency_percents = {
     agent_name: { 
         'degree': data['degree'],
-        'degree_percentile': percentileofscore(list(nx.degree(graph)), data['degree']),
+        'degree_percentile': percentileofscore([ entry[1] for entry in nx.degree(graph) ], data['degree']),
         'percent_runs': len(data['runs']) / len(peak_spread_data)
       } for agent_name, data in high_spread_frequency.items()
   } 
@@ -1014,7 +1045,7 @@ def analyze_high_spread_frequency(peak_spread_data, graph):
   return freq_percents_sorted
 
 def analyze_dynamic_spread_peak_df(df, columns, sim_output_dir):
-  analyzed_data = {}
+  analyzed_data = { 'by_run': {}, 'across_runs': {} }
   for row in df.iterrows():
     data = row[1]
     col_values = [ data[col] for col in columns ]
@@ -1035,15 +1066,20 @@ def analyze_dynamic_spread_peak_df(df, columns, sim_output_dir):
       adoption_data = json.load(f)
     
     print(f'analyzing run {data["run_id"]}')
-    analyzed_data[data['run_id']] = analyze_dynamic_spread_peak(data['data'], adoption_data, link_formation_data, graph)
+    analyzed_data['by_run'][data['run_id']] = analyze_dynamic_spread_peak(data['data'], adoption_data, link_formation_data, graph)
 
+  # TODO: This will be different because the graphs vary over
+  # runs
+  # analyzed_data['across_runs']['high_frequency_spreaders'] = analyze_high_spread_frequency(analyzed_data['by_run'], graph)
   return analyzed_data
 
 def analyze_static_spread_peak_df(df, columns, sim_output_dir):
-  analyzed_data = {}
+  analyzed_data = { 'by_run': {}, 'across_runs': {} }
+  # This can be saved globally since every run here has the same graph
+  graph = None
   for row in df.iterrows():
     data = row[1]
-    col_values = [ data[col] for col in columns ]
+    col_values = [ str(data[col]) for col in columns ]
     col_string = '-'.join(col_values)
 
     # Read in the graph
@@ -1057,8 +1093,9 @@ def analyze_static_spread_peak_df(df, columns, sim_output_dir):
       adoption_data = json.load(f)
     
     print(f'analyzing run {data["run_id"]}')
-    analyzed_data[data['run_id']] = analyze_static_spread_peak(data['data'], adoption_data, graph)
+    analyzed_data['by_run'][data['run_id']] = analyze_static_spread_peak(data['data'], adoption_data, graph)
 
+  analyzed_data['across_runs']['high_frequency_spreaders'] = analyze_high_spread_frequency(analyzed_data['by_run'], graph)
   return analyzed_data
 
 def agent_id_from_name(agent_name):
@@ -1134,6 +1171,7 @@ def analyze_static_spread_peak(spread_data, adoption_data, graph):
       f'{adopter},deg {degree_from_agent_name(adopter)}': f'{sender},deg {degree_from_agent_name(sender)}' for adopter, sender in adopters.items()
     } for tick,adopters in adoption_data.items()
   }
+  # print(adoption_data)
   
   peak_tick = list(spread_data).index(max(spread_data))
 
