@@ -997,7 +997,7 @@ def analyze_and_write_spread_analysis(out_path, simulation_data_path):
         raw_data = df.iloc[j]['data']
         df.at[j,'data'] = np.fromstring(raw_data[1:-1].replace('\n','').replace('0. ','0 '),sep=' ')
     else:
-      df = static_influence_monte_carlo_results_to_df(f'{simulation_data_path}/static-infleunce-monte-carlo-{i}',i,False)
+      df = static_influence_monte_carlo_results_to_df(f'{simulation_data_path}/static-influence-monte-carlo-{i}',i,False)
       df.to_csv(f'{out_path}/monte-carlo-{i}_no-organizing.csv')
       df = df['new-beliefs']
 
@@ -1010,8 +1010,6 @@ def analyze_and_write_spread_analysis(out_path, simulation_data_path):
     # Write out the frequency and degree percentile analysis
     with open(f'{out_path}/monte-carlo-{i}_high-spread-frequency.json','w') as f:
       json.dump(high_spread, f, ensure_ascii=False)
-    
-
 
 def analyze_high_spread_frequency(peak_spread_data, graph):
   '''
@@ -1044,15 +1042,16 @@ def analyze_high_spread_frequency(peak_spread_data, graph):
   freq_percents_sorted = {agent_name: data for agent_name, data in sorted(frequency_percents.items(), key=lambda item: item[1]['percent_runs'])}
   return freq_percents_sorted
 
-def analyze_dynamic_spread_peak_df(df, columns, sim_output_dir):
+def analyze_dynamic_spread_peak_df(df, columns, graph_path, sim_output_dir):
   analyzed_data = { 'by_run': {}, 'across_runs': {} }
+
   for row in df.iterrows():
     data = row[1]
     col_values = [ data[col] for col in columns ]
     col_string = '-'.join(col_values)
 
     # Read in the graph
-    (cit, cit_social, media_arr, media_sub_arr)= read_graph(f'{sim_output_dir}/graphs/{col_string}.csv')
+    (cit, cit_social, media_arr, media_sub_arr)= read_graph(graph_path)
     graph = read_graph_to_nx_with_media(cit, cit_social, media_arr, media_sub_arr)
     # Read in the adoption data
     col_dir_string = '/'.join(col_values)
@@ -1063,10 +1062,13 @@ def analyze_dynamic_spread_peak_df(df, columns, sim_output_dir):
 
     link_formation_data = None
     with open(f'{sim_output_dir}/{col_dir_string}/{data["run_id"]}_links_formed.json','r') as f:
-      adoption_data = json.load(f)
+      link_formation_data = json.load(f)
     
-    print(f'analyzing run {data["run_id"]}')
-    analyzed_data['by_run'][data['run_id']] = analyze_dynamic_spread_peak(data['data'], adoption_data, link_formation_data, graph)
+    strat_capacity_str = f'{data["flint-organizing-strategy"]},{data["organizing-capacity"]}'
+    print(f'analyzing {strat_capacity_str} run {data["run_id"]}')
+    if strat_capacity_str not in analyzed_data['by_run']:
+      analyzed_data['by_run'][strat_capacity_str] = {}
+    analyzed_data['by_run'][strat_capacity_str][data['run_id']] = analyze_dynamic_spread_peak(data['data'], adoption_data, link_formation_data, graph)
 
   # TODO: This will be different because the graphs vary over
   # runs
@@ -1102,7 +1104,8 @@ def agent_id_from_name(agent_name):
   return agent_name.replace('(citizen ','').replace(')','') if 'citizen' in agent_name else agent_name.replace('(media ','').replace(')','')
 
 def organizing_graph_at_tick(graph, link_formation_data, tick):
-  for t,links_formed in sorted(link_formation_data).items():
+  for t in sorted(link_formation_data):
+    links_formed = link_formation_data[t]
     if t <= tick:
       for organizer,organized in links_formed.items():
         graph.add_edge(agent_id_from_name(organizer), agent_id_from_name(organized))
@@ -1327,17 +1330,18 @@ def static_influence_monte_carlo_results_to_df(path, version, organizing_on):
     }
   }
   measures = ['new-beliefs']
-  df_columns = { "new-beliefs": ['n','spread-type','simple-spread-chance','ba-m','cit-media-influence','cit-cit-influence','repetition'] } if not organizing_on else { "new-beliefs": ['n','spread-type','simple-spread-chance','ba-m','cit-media-influence','cit-cit-influence', 'flint-organizing-strategy', 'repetition'] }
-  multidata_key_params = ['simple-spread-chance','ba-m','cit-media-influence','cit-cit-influence','repetition'] if not organizing_on else ['simple-spread-chance','ba-m','cit-media-influence','cit-cit-influence', 'flint-organizing-strategy', 'repetition']
+  df_columns = { "new-beliefs": ['n','spread-type','simple-spread-chance','ba-m','cit-media-influence','cit-cit-influence','repetition'] } if not organizing_on else { "new-beliefs": ['n','spread-type','simple-spread-chance','ba-m','cit-media-influence','cit-cit-influence', 'flint-organizing-strategy','organizing-capacity','repetition'] }
+  multidata_key_params = ['simple-spread-chance','ba-m','cit-media-influence','cit-cit-influence','repetition'] if not organizing_on else ['simple-spread-chance','ba-m','cit-media-influence','cit-cit-influence', 'flint-organizing-strategy', 'organizing-capacity','repetition']
 
   simple_spread_chance = version_to_params[version]['simple_spread_chance']
   ba_m = version_to_params[version]['ba_m']
   cit_cit_influence = version_to_params[version]['cit_cit_influence']
   cit_media_influence = version_to_params[version]['cit_media_influence']
   organizing_strategy = ['neighbors-of-neighbors','high-degree-media','high-degree-citizens','high-degree-cit-and-media']
+  organizing_capacity = ['1','5']
   repetition = version_to_params[version]['repetition']
 
-  param_values = [simple_spread_chance,ba_m,cit_media_influence,cit_cit_influence,repetition] if not organizing_on else [simple_spread_chance,ba_m,cit_media_influence,cit_cit_influence,organizing_strategy, repetition]
+  param_values = [simple_spread_chance,ba_m,cit_media_influence,cit_cit_influence,repetition] if not organizing_on else [simple_spread_chance,ba_m,cit_media_influence,cit_cit_influence,organizing_strategy, organizing_capacity, repetition]
   (multidata, props, params, multidata_ids) = get_all_multidata(
     param_values,
     {'percent-agent-beliefs': [PLOT_TYPES.LINE, PLOT_TYPES.STACK],
