@@ -4455,7 +4455,7 @@ output-organized-link-data contagion-dir behavior-rand</final>
   </experiment>
   <experiment name="static-influence-monte-carlo-EP-1_no-organizing" repetitions="1" runMetricsEveryStep="false">
     <setup>setup-py
-let run-dir (word sim-output-dir "/static-influence-monte-carlo-1")
+let run-dir (word sim-output-dir "/static-influence-monte-carlo-EP-1")
 let graphs-path (word run-dir "/graphs")
 carefully [
   if not (py:runresult (word "os.path.isdir('" graphs-path "')")) [
