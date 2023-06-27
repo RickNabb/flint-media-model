@@ -982,6 +982,19 @@ def plot_chi_sq_data(chi2_data, props, title, out_path, out_filename):
   plt.savefig(f'{out_path}/{out_filename}')
   plt.close()
 
+def load_df_from_simulations(data_path):
+  '''
+  Load a data frame from our simulations and parse the data field to turn
+  it from a string to a numpy array.
+  '''
+  df = None
+  if os.path.exists(f'{data_path}'):
+    df = pd.read_csv(f'{data_path}')
+    for j in range(len(df)):
+      raw_data = df.iloc[j]['data']
+      df.at[j,'data'] = np.fromstring(raw_data[1:-1].replace('\n','').replace('0. ','0 '),sep=' ')
+  return df
+
 def load_static_monte_carlo_dfs(data_path, num_simulations):
   dfs = []
   for i in range(1, num_simulations+1):
