@@ -3224,7 +3224,8 @@ carefully [
     <final>set behavior-rand random 10000
 export-world (word contagion-dir "/" behavior-rand "_world.csv")
 export-plot "percent-agent-beliefs" (word contagion-dir "/" behavior-rand "_percent-agent-beliefs.csv")
-export-plot "num-new-beliefs" (word contagion-dir "/" behavior-rand "_new-beliefs.csv")</final>
+export-plot "num-new-beliefs" (word contagion-dir "/" behavior-rand "_new-beliefs.csv")
+output-adoption-data contagion-dir behavior-rand</final>
     <timeLimit steps="114"/>
     <metric>count citizens</metric>
     <enumeratedValueSet variable="contagion-on?">
@@ -3278,8 +3279,6 @@ export-plot "num-new-beliefs" (word contagion-dir "/" behavior-rand "_new-belief
       <value value="3"/>
       <value value="10"/>
       <value value="20"/>
-      <value value="50"/>
-      <value value="100"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="epsilon">
       <value value="0"/>
