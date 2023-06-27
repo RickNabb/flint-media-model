@@ -1953,7 +1953,7 @@ INPUTBOX
 242
 555
 load-graph-path
-C:/Users/Nick/Documents/school/grad-school/Tufts/research/projects/flint-media-model/simulation-graphs/0.75-10-0.01-0.75-0.csv
+./monte-carlo-graph.csv
 1
 0
 String
@@ -4508,7 +4508,7 @@ output-adoption-data contagion-dir behavior-rand</final>
       <value value="true"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="load-graph-path">
-      <value value="&quot;C:/Users/Nick/Documents/school/grad-school/Tufts/research/projects/flint-media-model/simulation-graphs/0.75-10-0.01-0.75-0.csv&quot;"/>
+      <value value="&quot;./monte-carlo-graph.csv&quot;"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="media-agents?">
       <value value="true"/>
