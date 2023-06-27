@@ -982,13 +982,28 @@ def plot_chi_sq_data(chi2_data, props, title, out_path, out_filename):
   plt.savefig(f'{out_path}/{out_filename}')
   plt.close()
 
-def analyze_and_write_spread_analysis(out_path, simulation_data_path):
-  no_organizing_columns = ['simple-spread-chance','ba-m','cit-media-influence','cit-cit-influence','repetition']
-  (cit,cit_social,media_arr,media_sub_arr) = read_graph('./simulation-graphs/0.75-10-0.01-0.75-0.csv')
-  graph = read_graph_to_nx_with_media(cit, cit_social, media_arr, media_sub_arr)
+def load_static_monte_carlo_dfs(data_path, num_simulations):
+  dfs = []
+  for i in range(1, num_simulations+1):
+    print(f'Loading data for monte carlo {i}')
+    df = None
+    if os.path.exists(f'{data_path}/monte-carlo-{i}_no-organizing.csv'):
+      df = pd.read_csv(f'{data_path}/monte-carlo-{i}_no-organizing.csv')
+      for j in range(len(df)):
+        raw_data = df.iloc[j]['data']
+        df.at[j,'data'] = np.fromstring(raw_data[1:-1].replace('\n','').replace('0. ','0 '),sep=' ')
+    dfs.append(df)
+  return dfs
 
-  # TODO: Only no organizing thus far
-  for i in range(1, 6):
+def analyze_and_write_static_spread_analysis(out_path, simulation_data_path, graph_path, num_simulations):
+  no_organizing_columns = ['simple-spread-chance','ba-m','cit-media-influence','cit-cit-influence','repetition']
+  # Keep this like this even though it's duplicated so it can be used from command
+  # line easier
+  (cit,cit_social,media_arr,media_sub_arr) = read_graph(graph_path)
+  graph = read_graph_to_nx_with_media(cit, cit_social, media_arr, media_sub_arr)
+  high_spreaders = []
+
+  for i in range(1, num_simulations+1):
     print(f'Analyzing and writing results for monte carlo {i}')
     df = None
     if os.path.exists(f'{out_path}/monte-carlo-{i}_no-organizing.csv'):
@@ -1001,7 +1016,7 @@ def analyze_and_write_spread_analysis(out_path, simulation_data_path):
       df.to_csv(f'{out_path}/monte-carlo-{i}_no-organizing.csv')
       df = df['new-beliefs']
 
-    df_spread_res = analyze_static_spread_peak_df(df, no_organizing_columns, f'{simulation_data_path}/static-influence-monte-carlo-{i}')
+    df_spread_res = analyze_static_spread_peak_df(df, no_organizing_columns, graph_path, f'{simulation_data_path}/static-influence-monte-carlo-{i}')
     # Write out raw spread results by run
     with open(f'{out_path}/monte-carlo-{i}_high-spread-by-run.json','w') as f:
       json.dump({ run_id: run_data[0] for run_id, run_data in df_spread_res['by_run'].items() }, f, ensure_ascii=False)
@@ -1010,6 +1025,48 @@ def analyze_and_write_spread_analysis(out_path, simulation_data_path):
     # Write out the frequency and degree percentile analysis
     with open(f'{out_path}/monte-carlo-{i}_high-spread-frequency.json','w') as f:
       json.dump(high_spread, f, ensure_ascii=False)
+
+    high_spreaders.append(high_spread)
+
+  high_spreaders_across_mcs = high_spreaders_across_mc_runs(high_spreaders)
+  write_high_spreaders_across_mc_runs(high_spreaders_across_mcs, out_path)
+
+def analyze_and_write_dynamic_spread_analysis(out_path, simulation_data_path, graph_path, num_simulations):
+  columns = ['simple-spread-chance','ba-m','cit-media-influence','cit-cit-influence','flint-organizing-strategy','organizing-capacity','repetition']
+  # Keep this like this even though it's duplicated so it can be used from command
+  # line easier
+  (cit,cit_social,media_arr,media_sub_arr) = read_graph(graph_path)
+  graph = read_graph_to_nx_with_media(cit, cit_social, media_arr, media_sub_arr)
+
+  for i in range(1, num_simulations+1):
+    print(f'Analyzing and writing results for monte carlo {i}')
+    df = None
+    if os.path.exists(f'{out_path}/monte-carlo-{i}_organizing.csv'):
+      df = pd.read_csv(f'{out_path}/monte-carlo-{i}_organizing.csv')
+      for j in range(len(df)):
+        raw_data = df.iloc[j]['data']
+        df.at[j,'data'] = np.fromstring(raw_data[1:-1].replace('\n','').replace('0. ','0 '),sep=' ')
+    else:
+      df = static_influence_monte_carlo_results_to_df(f'{simulation_data_path}/static-influence-monte-carlo-{i}_organizing',i,True)
+      df.to_csv(f'{out_path}/monte-carlo-{i}_organizing.csv')
+      df = df['new-beliefs']
+
+    df_spread_res = analyze_dynamic_spread_peak_df(df, columns, graph_path, f'{simulation_data_path}/static-influence-monte-carlo-{i}_organizing')
+
+    for strat_capacity, data in df_spread_res['by_run'].items():
+      strat_capacity_str = strat_capacity.replace(',','-')
+      # Write out raw spread results by run
+      with open(f'{out_path}/monte-carlo-{i}_organizing_{strat_capacity_str}_high-spread-by-run.json','w') as f:
+        json.dump({ run_id: run_data[0] for run_id, run_data in data.items() }, f, ensure_ascii=False)
+
+      high_spread = analyze_high_spread_frequency(data, graph)
+      # Write out the frequency and degree percentile analysis
+      with open(f'{out_path}/monte-carlo-{i}_organizing_{strat_capacity_str}_high-spread-frequency.json','w') as f:
+        json.dump(high_spread, f, ensure_ascii=False)
+
+def analyze_and_write_spread_analysis(out_path, simulation_data_path, graph_path):
+  num_simulations = 5
+  analyze_and_write_static_spread_analysis(out_path, simulation_data_path, graph_path, num_simulations)
 
 def analyze_high_spread_frequency(peak_spread_data, graph):
   '''
@@ -1035,6 +1092,8 @@ def analyze_high_spread_frequency(peak_spread_data, graph):
   frequency_percents = {
     agent_name: { 
         'degree': data['degree'],
+        # TODO: This should account for graph changes for the dynamic
+        # case
         'degree_percentile': percentileofscore([ entry[1] for entry in nx.degree(graph) ], data['degree']),
         'percent_runs': len(data['runs']) / len(peak_spread_data)
       } for agent_name, data in high_spread_frequency.items()
@@ -1047,8 +1106,7 @@ def analyze_dynamic_spread_peak_df(df, columns, graph_path, sim_output_dir):
 
   for row in df.iterrows():
     data = row[1]
-    col_values = [ data[col] for col in columns ]
-    col_string = '-'.join(col_values)
+    col_values = [ str(data[col]) for col in columns ]
 
     # Read in the graph
     (cit, cit_social, media_arr, media_sub_arr)= read_graph(graph_path)
@@ -1075,17 +1133,16 @@ def analyze_dynamic_spread_peak_df(df, columns, graph_path, sim_output_dir):
   # analyzed_data['across_runs']['high_frequency_spreaders'] = analyze_high_spread_frequency(analyzed_data['by_run'], graph)
   return analyzed_data
 
-def analyze_static_spread_peak_df(df, columns, sim_output_dir):
+def analyze_static_spread_peak_df(df, columns, graph_path, sim_output_dir):
   analyzed_data = { 'by_run': {}, 'across_runs': {} }
   # This can be saved globally since every run here has the same graph
   graph = None
   for row in df.iterrows():
     data = row[1]
     col_values = [ str(data[col]) for col in columns ]
-    col_string = '-'.join(col_values)
 
     # Read in the graph
-    (cit, cit_social, media_arr, media_sub_arr)= read_graph(f'{sim_output_dir}/graphs/{col_string}.csv')
+    (cit, cit_social, media_arr, media_sub_arr)= read_graph(graph_path)
     graph = read_graph_to_nx_with_media(cit, cit_social, media_arr, media_sub_arr)
     # Read in the adoption data
     col_dir_string = '/'.join(col_values)
@@ -1189,6 +1246,39 @@ def analyze_static_spread_peak(spread_data, adoption_data, graph):
   }
 
   return (adopters_around_peak, high_spread_agents)
+
+def simulation_runs_near_flint_peak(df, flint_peak, threshold):
+  peak_tick = lambda data: list(data).index(max(data))
+  df['peak_tick'] = df['data'].apply(peak_tick)
+  return df[(df['peak_tick'] >= (flint_peak - threshold)) & (df['peak_tick'] <= (flint_peak + threshold))]
+
+def write_high_spreaders_across_mc_runs(spreaders_across_mcs, output_dir):
+  table = f'Agent Name,'
+  for i in range(len(list(spreaders_across_mcs.values())[0])):
+    table += f'MC{i+1},'
+  table += '\n'
+
+  for spreader,mcs in spreaders_across_mcs.items():
+    Xs = [ ('X' if mc else '') for mc in mcs.values() ]
+    table += f'{spreader},'
+    for X in Xs:
+      table += X + ','
+    table += '\n'
+  with open(f'{output_dir}/high_spreaders_across_mcs.csv','w') as f:
+    f.write(table)
+
+def high_spreaders_across_mc_runs(high_spread_data):
+  all_keys = []
+  for mc_data in high_spread_data:
+    all_keys += mc_data
+  all_keys_set = set(all_keys)
+  spreaders_across_mcs = { spreader: { i: 0 for i in range(len(high_spread_data)) } for spreader in all_keys_set }
+  for i in range(len(high_spread_data)):
+    mc_data = high_spread_data[i]
+    for spreader in mc_data.keys():
+      spreaders_across_mcs[spreader][i] = 1
+  return dict(sorted(spreaders_across_mcs.items(), key=lambda item: sum(item[1].values())))
+  
 
 """
 ##################
