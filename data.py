@@ -1026,8 +1026,8 @@ def analyze_and_write_static_spread_analysis(out_path, simulation_data_path, gra
         df.at[j,'data'] = np.fromstring(raw_data[1:-1].replace('\n','').replace('0. ','0 '),sep=' ')
     else:
       df = static_influence_monte_carlo_results_to_df(f'{simulation_data_path}/static-influence-monte-carlo-{i}',i,False)
-      df.to_csv(f'{out_path}/monte-carlo-{i}_no-organizing.csv')
       df = df['new-beliefs']
+      df.to_csv(f'{out_path}/monte-carlo-{i}_no-organizing.csv')
 
     df_spread_res = analyze_static_spread_peak_df(df, no_organizing_columns, graph_path, f'{simulation_data_path}/static-influence-monte-carlo-{i}')
     # Write out raw spread results by run
