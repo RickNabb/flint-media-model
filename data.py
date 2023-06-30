@@ -1400,7 +1400,7 @@ def static_influence_monte_carlo_results_to_df(path, version, organizing_on):
       'simple_spread_chance': [ '0.75' ],
       'ba_m': [ '10' ],
       'cit_cit_influence': [ '0.75' ],
-      'cit_media_influence': [ '0.01' ],
+      'cit_media_influence': [ '0.75' ],
       'repetition': [ '0' ],
     },
     2: {
