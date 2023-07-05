@@ -1029,7 +1029,7 @@ def analyze_and_write_static_spread_analysis(out_path, simulation_data_path, gra
       df = df['new-beliefs']
       df.to_csv(f'{out_path}/monte-carlo-{i}_no-organizing.csv')
 
-    df_spread_res = analyze_static_spread_peak_df(df, no_organizing_columns, graph_path, f'{simulation_data_path}/static-influence-monte-carlo-{i}')
+    df_spread_res = analyze_mc_static_spread_peak_df(df, no_organizing_columns, graph_path, f'{simulation_data_path}/static-influence-monte-carlo-{i}')
     # Write out raw spread results by run
     with open(f'{out_path}/monte-carlo-{i}_high-spread-by-run.json','w') as f:
       json.dump({ run_id: run_data[0] for run_id, run_data in df_spread_res['by_run'].items() }, f, ensure_ascii=False)
@@ -1146,17 +1146,66 @@ def analyze_dynamic_spread_peak_df(df, columns, graph_path, sim_output_dir):
   # analyzed_data['across_runs']['high_frequency_spreaders'] = analyze_high_spread_frequency(analyzed_data['by_run'], graph)
   return analyzed_data
 
-def analyze_static_spread_peak_df(df, columns, graph_path, sim_output_dir):
+def analyze_static_spread_peak_df(df, columns, graphs_dir, sim_output_dir):
+  '''
+  Analyze spread data for a static simulation run -- static
+  meaning that the graph does not change across the simulation.
+
+  :param df: A data frame containing run data for each simulation trial
+  and its parameter data.
+  :param columns: A list of string column names used to reconstruct paths
+  per dataframe entry from its parameter values so spread data can be
+  retrieved from that path.
+  :param graphs_dir: A path to the directory that holds graph data for
+  the simulation trials.
+  :param sim_output_dir: The general output directory for the simulation
+  trials, used as a base path for the parameter combination-specific paths.
+  '''
   analyzed_data = { 'by_run': {}, 'across_runs': {} }
-  # This can be saved globally since every run here has the same graph
-  graph = None
   for row in df.iterrows():
     data = row[1]
     col_values = [ str(data[col]) for col in columns ]
 
-    # Read in the graph
-    (cit, cit_social, media_arr, media_sub_arr)= read_graph(graph_path)
+    # Read in the adoption data
+    col_dir_string = '/'.join(col_values)
+    col_file_string = '-'.join(col_values)
+
+    # Read in the graph used for this specific parameter combination
+    (cit, cit_social, media_arr, media_sub_arr)= read_graph(f'{graphs_dir}/{col_file_string}.csv')
     graph = read_graph_to_nx_with_media(cit, cit_social, media_arr, media_sub_arr)
+
+    adoption_data = None
+    with open(f'{sim_output_dir}/{col_dir_string}/{data["run_id"]}_messages_adopted.json','r') as f:
+      adoption_data = json.load(f)
+    
+    print(f'analyzing run {data["run_id"]}')
+    analyzed_data['by_run'][data['run_id']] = analyze_static_spread_peak(data['data'], adoption_data, graph)
+
+  analyzed_data['across_runs']['high_frequency_spreaders'] = analyze_high_spread_frequency(analyzed_data['by_run'], graph)
+  return analyzed_data
+
+def analyze_mc_static_spread_peak_df(df, columns, graph_path, sim_output_dir):
+  '''
+  Analyze spread data for a static Monte Carlo simulation run -- static
+  meaning that the graph does not change across the simulation.
+
+  :param df: A data frame containing run data for each simulation trial
+  and its parameter data.
+  :param columns: A list of string column names used to reconstruct paths
+  per dataframe entry from its parameter values so spread data can be
+  retrieved from that path.
+  :param graph_path: The path to the graph used for the MC trials.
+  :param sim_output_dir: The general output directory for the simulation
+  trials, used as a base path for the parameter combination-specific paths.
+  '''
+  analyzed_data = { 'by_run': {}, 'across_runs': {} }
+  # This can be saved globally since every run here has the same graph
+  (cit, cit_social, media_arr, media_sub_arr)= read_graph(graph_path)
+  graph = read_graph_to_nx_with_media(cit, cit_social, media_arr, media_sub_arr)
+  for row in df.iterrows():
+    data = row[1]
+    col_values = [ str(data[col]) for col in columns ]
+
     # Read in the adoption data
     col_dir_string = '/'.join(col_values)
 
@@ -1378,7 +1427,7 @@ def process_belief_spread_exp_results(path):
 
 def base_model_sweep_results_to_df(path):
   simple_spread_chance = [ '0.01', '0.05', '0.1', '0.25', '0.5', '0.75' ]
-  ba_m = ['1','2','3','5','10','20','50']
+  ba_m = ['1','2','3','5','10','20']
   cit_cit_influence = ['1']
   cit_media_influence = ['1']
   repetition = ['0','1','2','3','4']
