@@ -1971,7 +1971,7 @@ INPUTBOX
 244
 622
 save-graph-path
-C:/Users/nrabb_000/Documents/school/grad-school/Tufts/research/projects/flint-media-model/simulation-data/static-influence-monte-carlo-1/graphs/0.75-10-0.01-0.75-0.csv
+D:/school/grad-school/Tufts/research/flint-media-model/simulation-data/base-model-sweep/graphs/0.75-20-1-1-3.csv
 1
 0
 String
@@ -2291,7 +2291,7 @@ ba-m
 ba-m
 0
 50
-10.0
+20.0
 1
 1
 NIL
@@ -2342,7 +2342,7 @@ citizen-citizen-influence
 citizen-citizen-influence
 0
 1
-0.75
+1.0
 0.01
 1
 NIL
@@ -2357,7 +2357,7 @@ citizen-media-influence
 citizen-media-influence
 0
 1
-0.75
+1.0
 0.01
 1
 NIL
@@ -2483,7 +2483,7 @@ SWITCH
 538
 flint-organizing?
 flint-organizing?
-0
+1
 1
 -1000
 
@@ -2604,7 +2604,7 @@ repetition
 repetition
 0
 50
-0.0
+4.0
 1
 1
 NIL
@@ -2619,7 +2619,7 @@ behavior-rand
 behavior-rand
 0
 10000
-985.0
+9533.0
 1
 1
 NIL
@@ -3294,7 +3294,10 @@ output-adoption-data contagion-dir behavior-rand</final>
       <value value="&quot;barabasi-albert&quot;"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="ba-m">
+      <value value="1"/>
+      <value value="2"/>
       <value value="3"/>
+      <value value="5"/>
       <value value="10"/>
       <value value="20"/>
     </enumeratedValueSet>
