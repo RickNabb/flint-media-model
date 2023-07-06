@@ -1425,6 +1425,24 @@ def process_belief_spread_exp_results(path):
     'new-beliefs': [PLOT_TYPES.LINE]},
     path)
 
+def programmed_influence_monte_carlo_to_df(path):
+  simple_spread_chance = [ '0.05' ]
+  ba_m = ['10']
+  cit_cit_influence = ['0.01']
+  cit_media_influence = ['0.01']
+  repetition = ['0']
+
+  measures = ['new-beliefs']
+  df_columns = { "new-beliefs": ['n','spread-type','simple-spread-chance','graph-type','ba-m','citizen-media-influence', 'citizen-citizen-influence','repetition'] }
+  multidata_key_params = ['simple-spread-chance','ba-m','citizen-media-influence', 'citizen-citizen-influence', 'repetition']
+
+  (multidata, props, params, multidata_ids) = get_all_multidata(
+    [simple_spread_chance,ba_m,cit_media_influence,cit_cit_influence,repetition],
+    {'percent-agent-beliefs': [PLOT_TYPES.LINE, PLOT_TYPES.STACK],
+    'new-beliefs': [PLOT_TYPES.LINE]},
+    path)
+  return multidata_to_dataframes(measures, df_columns, multidata, multidata_key_params, props, params, multidata_ids)
+
 def base_model_sweep_results_to_df(path):
   simple_spread_chance = [ '0.01', '0.05', '0.1', '0.25', '0.5', '0.75' ]
   ba_m = ['1','2','3','5','10','20']
