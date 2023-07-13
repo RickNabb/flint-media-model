@@ -1464,10 +1464,10 @@ def base_model_sweep_results_to_df(path):
 def static_influence_monte_carlo_results_to_df(path, version, organizing_on):
   version_to_params = {
     1: {
-      'simple_spread_chance': [ '0.75' ],
+      'simple_spread_chance': [ '0.05' ],
       'ba_m': [ '10' ],
-      'cit_cit_influence': [ '0.75' ],
-      'cit_media_influence': [ '0.75' ],
+      'cit_cit_influence': [ '0.01' ],
+      'cit_media_influence': [ '0.01' ],
       'repetition': [ '0' ],
     },
     2: {
