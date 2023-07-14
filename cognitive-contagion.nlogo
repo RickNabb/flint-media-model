@@ -441,7 +441,7 @@ to step
 ;  ]
 ;  show (word "last num agents adopted: " num-agents-adopted)
 
-  if forced-flint-peak? and ticks = 96 [
+  if forced-flint-peak? and ticks = 88 [
     set simple-spread-chance 0.75
     set citizen-citizen-influence 0.75
     set citizen-media-influence 0.75
@@ -2064,7 +2064,7 @@ INPUTBOX
 341
 277
 sim-output-dir
-D:/school/grad-school/Tufts/research/flint-media-model/simulation-data/
+C:/Users/cknox02/Documents/flint_single_graph
 1
 0
 String
@@ -2291,7 +2291,7 @@ ba-m
 ba-m
 0
 50
-20.0
+10.0
 1
 1
 NIL
@@ -2342,7 +2342,7 @@ citizen-citizen-influence
 citizen-citizen-influence
 0
 1
-1.0
+0.75
 0.01
 1
 NIL
@@ -2357,7 +2357,7 @@ citizen-media-influence
 citizen-media-influence
 0
 1
-1.0
+0.75
 0.01
 1
 NIL
@@ -2604,7 +2604,7 @@ repetition
 repetition
 0
 50
-4.0
+0.0
 1
 1
 NIL
@@ -2619,7 +2619,7 @@ behavior-rand
 behavior-rand
 0
 10000
-9533.0
+989.0
 1
 1
 NIL
@@ -2978,7 +2978,7 @@ false
 Polygon -7500403 true true 270 75 225 30 30 225 75 270
 Polygon -7500403 true true 30 75 75 30 270 225 225 270
 @#$#@#$#@
-NetLogo 6.1.1
+NetLogo 6.2.2
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@
