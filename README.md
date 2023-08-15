@@ -90,7 +90,7 @@ If you want to generate `pandas` dataframes from your own custom running of simu
 
 ### Analysis Replication
 
-Initial analysis uses the Jupyter Notebook “Data Analysis- Media Agents-Numbered”.  The google trends data is read in and processed with the code under the heading “Google Trends Data Interpretation.” The csv files from both the heterogeneous and base model (results-base-model-.csv and static-influence-sweep.csv) are read in to generate a file with added metrics to investigate, including the data used for our time of peak spread analysis.
+Initial analysis uses the Jupyter Notebook `Data Analysis- Media Agents-Numbered`.  The google trends data is read in and processed with the code under the heading “Google Trends Data Interpretation.” The csv files from both the heterogeneous and base model (`base-model-sweep.csv` and `static-influence-sweep.csv`) are read in to generate a file with added metrics to investigate, including the data used for our time of peak spread analysis.
 
 #### Peak Times for Base & Heterogeneous Models
 
@@ -100,7 +100,7 @@ By changing the csv file used initially, we can repeat this process for each mod
 
 #### Monte Carlo Analyses
 
-The Monte Carlo analysis is completed using the code in the Jupyter Notebook “MC_analysis.” Each of the outputs for the 10 MC results is processed through the “Data Analysis- Media Agents-Numbered” Slide.  The cell labeled “Number of Alignment” could be used to determine the number of simulations that captured the behavior of either Flint or East Palestine by changing the time frame we search for.  In the case of East Palestine, this means that the time of peak were between 0 and 8 (EP peaked at t=3). For Flint, this means limiting the dataframe to the simulations peaking between t=86 and t=96 (within 5 weeks of the peak, occurring at t=91). 
+The Monte Carlo analysis is completed using the code in the Jupyter Notebook `MC_analysis.` Each of the outputs for the 10 MC results is processed through the `Data Analysis- Media Agents-Numbered` Slide.  The cell labeled “Number of Alignment” could be used to determine the number of simulations that captured the behavior of either Flint or East Palestine by changing the time frame we search for.  In the case of East Palestine, this means that the time of peak were between 0 and 8 (EP peaked at t=3). For Flint, this means limiting the dataframe to the simulations peaking between t=86 and t=96 (within 5 weeks of the peak, occurring at t=91). 
 
 Running the code under “Generate MC Figure” using the data files generated with the metrics in the process explained above (in our folder, these are labeled as `f_mcX_with_metrics.csv` or `ep_mcX_with_metrics.csv`) will generate the figure of all the Monte Carlo Analysis. 
 
