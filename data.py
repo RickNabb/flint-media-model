@@ -995,18 +995,101 @@ def load_df_from_simulations(data_path):
       df.at[j,'data'] = np.fromstring(raw_data[1:-1].replace('\n','').replace('0. ','0 '),sep=' ')
   return df
 
-def load_static_monte_carlo_dfs(data_path, num_simulations):
+
+FLINT_MC_SIM_PARAMS = {
+  1: {
+    'simple_spread_chance': [ '0.05' ],
+    'ba_m': [ '10' ],
+    'cit_cit_influence': [ '0.01' ],
+    'cit_media_influence': [ '0.01' ],
+    'repetition': [ '0' ],
+  },
+  2: {
+    'simple_spread_chance': [ '0.75' ],
+    'ba_m': [ '10' ],
+    'cit_cit_influence': [ '0.5' ],
+    'cit_media_influence': [ '0.01' ],
+    'repetition': [ '0' ],
+  },
+  3: {
+    'simple_spread_chance': [ '0.75' ],
+    'ba_m': [ '10' ],
+    'cit_cit_influence': [ '0.25' ],
+    'cit_media_influence': [ '0.01' ],
+    'repetition': [ '0' ],
+  },
+  4: {
+    'simple_spread_chance': [ '0.5' ],
+    'ba_m': [ '10' ],
+    'cit_cit_influence': [ '0.25' ],
+    'cit_media_influence': [ '0.1' ],
+    'repetition': [ '0' ],
+  },
+  5: {
+    'simple_spread_chance': [ '0.5' ],
+    'ba_m': [ '10' ],
+    'cit_cit_influence': [ '0.5' ],
+    'cit_media_influence': [ '0.01' ],
+    'repetition': [ '0' ],
+  }
+}
+
+EP_MC_SIM_PARAMS = {
+  1: {
+    'simple_spread_chance': [ '0.75' ],
+    'ba_m': [ '10' ],
+    'cit_cit_influence': [ '0.75' ],
+    'cit_media_influence': [ '0.75' ],
+    'repetition': [ '0' ],
+  },
+  2: {
+    'simple_spread_chance': [ '0.75' ],
+    'ba_m': [ '10' ],
+    'cit_cit_influence': [ '0.75' ],
+    'cit_media_influence': [ '0.5' ],
+    'repetition': [ '0' ],
+  },
+  3: {
+    'simple_spread_chance': [ '0.75' ],
+    'ba_m': [ '10' ],
+    'cit_cit_influence': [ '0.5' ],
+    'cit_media_influence': [ '0.75' ],
+    'repetition': [ '0' ],
+  },
+  4: {
+    'simple_spread_chance': [ '0.75' ],
+    'ba_m': [ '10' ],
+    'cit_cit_influence': [ '0.25' ],
+    'cit_media_influence': [ '0.75' ],
+    'repetition': [ '0' ],
+  },
+  5: {
+    'simple_spread_chance': [ '0.5' ],
+    'ba_m': [ '10' ],
+    'cit_cit_influence': [ '0.75' ],
+    'cit_media_influence': [ '0.75' ],
+    'repetition': [ '0' ],
+  }
+}
+
+def load_static_monte_carlo_dfs(data_path, simulation_data_path, num_simulations, sim_params):
   dfs = []
   for i in range(1, num_simulations+1):
     print(f'Loading data for monte carlo {i}')
-    df = None
-    if os.path.exists(f'{data_path}/monte-carlo-{i}_no-organizing.csv'):
-      df = pd.read_csv(f'{data_path}/monte-carlo-{i}_no-organizing.csv')
-      for j in range(len(df)):
-        raw_data = df.iloc[j]['data']
-        df.at[j,'data'] = np.fromstring(raw_data[1:-1].replace('\n','').replace('0. ','0 '),sep=' ')
-    dfs.append(df)
+    dfs.append(load_static_monte_carlo_df(data_path, simulation_data_path, i, sim_params))
   return dfs
+
+def load_static_monte_carlo_df(data_path, simulation_data_path, sim_num, sim_params):
+  df = None
+  if os.path.exists(f'{data_path}/monte-carlo-{sim_num}_no-organizing.csv'):
+    df = pd.read_csv(f'{data_path}/monte-carlo-{sim_num}_no-organizing.csv')
+    for j in range(len(df)):
+      raw_data = df.iloc[j]['data']
+      df.at[j,'data'] = np.fromstring(raw_data[1:-1].replace('\n','').replace('0. ','0 '),sep=' ')
+  else:
+    df = static_influence_monte_carlo_results_to_df(f'{simulation_data_path}/static-influence-monte-carlo-{sim_num}',sim_num,False, sim_params)
+    df = df['new-beliefs']
+  return df
 
 def analyze_and_write_static_spread_analysis(out_path, simulation_data_path, graph_path, num_simulations):
   no_organizing_columns = ['simple-spread-chance','ba-m','cit-media-influence','cit-cit-influence','repetition']
@@ -1018,15 +1101,8 @@ def analyze_and_write_static_spread_analysis(out_path, simulation_data_path, gra
 
   for i in range(1, num_simulations+1):
     print(f'Analyzing and writing results for monte carlo {i}')
-    df = None
-    if os.path.exists(f'{out_path}/monte-carlo-{i}_no-organizing.csv'):
-      df = pd.read_csv(f'{out_path}/monte-carlo-{i}_no-organizing.csv')
-      for j in range(len(df)):
-        raw_data = df.iloc[j]['data']
-        df.at[j,'data'] = np.fromstring(raw_data[1:-1].replace('\n','').replace('0. ','0 '),sep=' ')
-    else:
-      df = static_influence_monte_carlo_results_to_df(f'{simulation_data_path}/static-influence-monte-carlo-{i}',i,False)
-      df = df['new-beliefs']
+    df = load_static_monte_carlo_df(out_path, simulation_data_path, i)
+    if not os.path.exists(f'{out_path}/monte-carlo-{i}_no-organizing.csv'):
       df.to_csv(f'{out_path}/monte-carlo-{i}_no-organizing.csv')
 
     df_spread_res = analyze_mc_static_spread_peak_df(df, no_organizing_columns, graph_path, f'{simulation_data_path}/static-influence-monte-carlo-{i}')
@@ -1461,44 +1537,7 @@ def base_model_sweep_results_to_df(path):
     path)
   return multidata_to_dataframes(measures, df_columns, multidata, multidata_key_params, props, params, multidata_ids)
 
-def static_influence_monte_carlo_results_to_df(path, version, organizing_on):
-  version_to_params = {
-    1: {
-      'simple_spread_chance': [ '0.05' ],
-      'ba_m': [ '10' ],
-      'cit_cit_influence': [ '0.01' ],
-      'cit_media_influence': [ '0.01' ],
-      'repetition': [ '0' ],
-    },
-    2: {
-      'simple_spread_chance': [ '0.75' ],
-      'ba_m': [ '10' ],
-      'cit_cit_influence': [ '0.5' ],
-      'cit_media_influence': [ '0.01' ],
-      'repetition': [ '0' ],
-    },
-    3: {
-      'simple_spread_chance': [ '0.75' ],
-      'ba_m': [ '10' ],
-      'cit_cit_influence': [ '0.25' ],
-      'cit_media_influence': [ '0.01' ],
-      'repetition': [ '0' ],
-    },
-    4: {
-      'simple_spread_chance': [ '0.5' ],
-      'ba_m': [ '10' ],
-      'cit_cit_influence': [ '0.25' ],
-      'cit_media_influence': [ '0.1' ],
-      'repetition': [ '0' ],
-    },
-    5: {
-      'simple_spread_chance': [ '0.5' ],
-      'ba_m': [ '10' ],
-      'cit_cit_influence': [ '0.5' ],
-      'cit_media_influence': [ '0.01' ],
-      'repetition': [ '0' ],
-    }
-  }
+def static_influence_monte_carlo_results_to_df(path, version, organizing_on, version_to_params):
   measures = ['new-beliefs']
   df_columns = { "new-beliefs": ['n','spread-type','simple-spread-chance','ba-m','cit-media-influence','cit-cit-influence','repetition'] } if not organizing_on else { "new-beliefs": ['n','spread-type','simple-spread-chance','ba-m','cit-media-influence','cit-cit-influence', 'flint-organizing-strategy','organizing-capacity','repetition'] }
   multidata_key_params = ['simple-spread-chance','ba-m','cit-media-influence','cit-cit-influence','repetition'] if not organizing_on else ['simple-spread-chance','ba-m','cit-media-influence','cit-cit-influence', 'flint-organizing-strategy', 'organizing-capacity','repetition']
